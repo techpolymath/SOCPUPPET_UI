@@ -275,10 +275,10 @@ func TargetBlockMessage(res intercept.TargetResult) string {
 		}
 		reason = "target " + target + ": " + reason
 	}
-	return "[ARTEX platform control, not target defense] " + res.Code + ": " + reason + ". " + targetGuidance[res.Code]
+	return "[SOCPuppet platform control, not target defense] " + res.Code + ": " + reason + ". " + targetGuidance[res.Code]
 }
 
-// systemBlockMessage frames an intercept block as an ARTEX platform-governance
+// systemBlockMessage frames an intercept block as a SOCPuppet platform-governance
 // decision so the agent does not mistake it for a target-side defense.
 //
 // The bare reasons ("this tool is forbidden" / "user rejected") read exactly like a WAF/403 on
@@ -291,7 +291,7 @@ func TargetBlockMessage(res intercept.TargetResult) string {
 // Audit/history rows keep the raw reason (see Interceptor.Log); only the
 // model-facing tool_result carries this framing.
 func systemBlockMessage(reason string) string {
-	return "[ARTEX platform control, not target defense] This call was intercepted by the platform. " +
+	return "[SOCPuppet platform control, not target defense] This call was intercepted by the platform. " +
 		"Reason: " + capBlockReason(reason) + ". This operation is forbidden."
 }
 

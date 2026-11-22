@@ -163,7 +163,7 @@ func (d *DB) ProfileByID(id int64) (*LLMProfile, error) {
 // slice front to back.
 func (d *DB) PoolProfiles() ([]*LLMProfile, error) {
 	rows, err := d.Query(`SELECT ` + profileColsKey + ` FROM llm_profiles
-WHERE (COALESCE(api_key,'') <> '' OR format='ollama') AND (is_default OR NOT pool_exclude)
+WHERE (COALESCE(api_key,'') <> '' OR format IN ('ollama','chatgpt')) AND (is_default OR NOT pool_exclude)
 ORDER BY is_default DESC, priority DESC, id ASC`)
 	if err != nil {
 		return nil, err
@@ -186,6 +186,14 @@ func (d *DB) SaveProfile(p *LLMProfile) (int64, error) {
 	// through ConfigFrom trims, so store the trimmed form or the raw value
 	// leaks into paths that assign it directly (the llm/test fallback).
 	p.APIKey = strings.TrimSpace(p.APIKey)
+	// ChatGPT-plan profiles obtain a short-lived bearer token from the encrypted
+	// OAuth credential record. Never retain an API key when an existing profile
+	// is converted to this keyless format.
+	chatGPTPlan := p.Format == "chatgpt"
+	if chatGPTPlan {
+		p.APIKey = ""
+		p.APIKeyHint = ""
+	}
 	hint := p.APIKeyHint
 	if len(p.APIKey) >= 4 {
 		hint = "…" + p.APIKey[len(p.APIKey)-4:]
@@ -209,6 +217,15 @@ VALUES ($1,$2,NULLIF($3,''),NULLIF($4,''),$5,NULLIF($6,''),NULLIF($7,''),$8,$9,$
 			_, err = d.saveProfilePrices(id, p)
 		}
 		return id, err
+	}
+	if chatGPTPlan {
+		_, err := d.Exec(`UPDATE llm_profiles SET name=$1,format=$2,base_url=NULLIF($3,''),proxy=NULLIF($4,''),model=$5,api_key=NULL,api_key_hint=NULL,rate_per_second=$6,rate_per_minute=$7,context_window_k=$8,reasoning_effort=$9,priority=$10,pool_exclude=$11,thinking_type=$12,streaming=$13,max_tokens=$14,max_tokens_field=$15,session_header_key=$16,retry_connect_attempts=$17,retry_connect_interval_ms=$18,retry_empty_attempts=$19,retry_empty_interval_ms=$20,retry_stream_attempts=$21,retry_stream_interval_ms=$22,user_agent=$23 WHERE id=$24`,
+			p.Name, p.Format, p.BaseURL, proxy, p.Model, p.RatePerSecond, p.RatePerMinute, p.ContextWindowK, p.ReasoningEffort, p.Priority, p.PoolExclude, p.ThinkingType, p.Streaming, p.MaxTokens, p.MaxTokensField, p.SessionHeaderKey,
+			r.Connect.Attempts, r.Connect.IntervalMS, r.Empty.Attempts, r.Empty.IntervalMS, r.Stream.Attempts, r.Stream.IntervalMS, p.UserAgent, p.ID)
+		if err == nil {
+			_, err = d.saveProfilePrices(p.ID, p)
+		}
+		return p.ID, err
 	}
 	if p.APIKey == "" {
 		_, err := d.Exec(`UPDATE llm_profiles SET name=$1,format=$2,base_url=NULLIF($3,''),proxy=NULLIF($4,''),model=$5,rate_per_second=$6,rate_per_minute=$7,context_window_k=$8,reasoning_effort=$9,priority=$10,pool_exclude=$11,thinking_type=$12,streaming=$13,max_tokens=$14,max_tokens_field=$15,session_header_key=$16,retry_connect_attempts=$17,retry_connect_interval_ms=$18,retry_empty_attempts=$19,retry_empty_interval_ms=$20,retry_stream_attempts=$21,retry_stream_interval_ms=$22,user_agent=$23 WHERE id=$24`,

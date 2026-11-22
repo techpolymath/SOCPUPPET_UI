@@ -39,6 +39,7 @@ const (
 	maxPasswordBytes = 72
 
 	pwdLimitTokenPrefix = "tok:"
+	adminUsername       = "SOCPuppet"
 )
 
 // errDataSourceUnavailable is the uniform reply when a password-related read fails.
@@ -179,7 +180,7 @@ type sessionClaims struct {
 	jwt.RegisteredClaims
 }
 
-// signJWT issues a 7-day HS256 token for user ARTEX at password version 0.
+// signJWT issues a 7-day HS256 token for the SOCPuppet administrator at password version 0.
 func signJWT(key []byte) (string, error) {
 	return signJWTVersion(key, 0)
 }
@@ -189,7 +190,7 @@ func signJWTVersion(key []byte, version int64) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, sessionClaims{
 		Pwd: version,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   "ARTEX",
+			Subject:   adminUsername,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -645,7 +646,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request, getSetting func(s
 		writeErr(w, 400, "Invalid request format")
 		return
 	}
-	if req.Username != "ARTEX" {
+	if req.Username != adminUsername {
 		writeErr(w, 401, "Incorrect username or password")
 		return
 	}

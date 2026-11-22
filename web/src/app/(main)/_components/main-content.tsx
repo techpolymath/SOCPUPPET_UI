@@ -58,7 +58,7 @@ export function MainContent({ children }: { children: ReactNode }) {
   const updateBanner = latest ? (
     <div className="flex shrink-0 items-center justify-center gap-2 border-b bg-muted/50 px-4 py-1 text-xs">
       <a href={RELEASES_URL} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
-        {t("ARTEX {version} is available. See the release notes.", { version: latest })}
+        {t("SOCPuppet {version} is available. See the release notes.", { version: latest })}
       </a>
       <button
         type="button"

@@ -1154,7 +1154,7 @@ export interface NotificationDelivery {
 export interface LLMProfile {
   id: string;
   name: string;
-  format: "openai" | "anthropic" | "openai-responses" | "ollama";
+  format: "openai" | "anthropic" | "openai-responses" | "ollama" | "chatgpt";
   base_url?: string;
   proxy?: string;
   model: string;
@@ -1191,6 +1191,14 @@ export interface LLMProfile {
   user_agent?: string;
   // This profile's retry overrides (connect / empty response / same-provider safety window). Empty / all zeros = follow the global policy.
   retry?: LLMRetryOverride;
+}
+
+export interface ChatGPTConnectionStatus {
+  connected: boolean;
+  sharing: boolean;
+  email?: string;
+  expires_at?: string;
+  manage_url?: string;
 }
 
 // ---- LLM retry policy ----

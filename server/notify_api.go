@@ -475,7 +475,7 @@ func notifyTestMessage(baseURL string) notify.Message {
 			Name:      "Test message · channel configuration OK",
 			VulnClass: "Connectivity test",
 			Severity:  "low",
-			Summary:   "This is a test message for an ARTEX notification channel; receiving it means the channel is configured correctly.",
+			Summary:   "This is a test message for a SOCPuppet notification channel; receiving it means the channel is configured correctly.",
 			Assets:    []string{"artex.example.com"},
 			DetailURL: baseURL,
 		}},

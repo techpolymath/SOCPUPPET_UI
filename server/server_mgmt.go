@@ -2131,6 +2131,19 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	p := body.LLMProfile
 	p.APIKey = body.APIKey
 	p.Streaming = body.Streaming == nil || *body.Streaming
+	if p.Format == "chatgpt" {
+		if _, connected, err := s.chatGPTAuth.connected(); err != nil || !connected {
+			writeErr(w, 400, "ChatGPT plan is not connected; choose Continue with ChatGPT first")
+			return
+		}
+		// OpenAI's plan-backed route accepts only the public Responses endpoint,
+		// streaming, and no max_output_tokens field.
+		p.BaseURL = "https://api.openai.com/v1"
+		p.Streaming = true
+		p.MaxTokens = 0
+		p.MaxTokensField = ""
+		p.APIKey = ""
+	}
 	// The list returns the proxy masked: the placeholder sent back keeps the
 	// stored proxy and is never stored itself.
 	if isMaskedSecret(p.Proxy) {

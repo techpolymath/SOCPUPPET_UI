@@ -829,7 +829,7 @@ func (t *Traffic) ExportHAR(f PageQuery, opts HARExportOptions) (HAR, HARExportM
 	doc := HAR{
 		Log: &HARLog{
 			Version:         HARVersion,
-			Creator:         HARCreator{Name: "ARTEX", Version: creatorVer},
+			Creator:         HARCreator{Name: "SOCPuppet", Version: creatorVer},
 			Entries:         entries,
 			Truncated:       meta.Truncated,
 			TruncatedReason: meta.TruncatedReason,

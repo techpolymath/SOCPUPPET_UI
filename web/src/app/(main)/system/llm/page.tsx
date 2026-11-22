@@ -28,11 +28,11 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t } from "@/i18n";
 import { api } from "@/lib/api";
-import type { LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
+import { setVisibleInterval } from "@/lib/polling";
+import type { ChatGPTConnectionStatus, LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { ProfileRetryFields, RetryPolicyPanel, ZERO_OVERRIDE } from "./_components/retry";
-import { setVisibleInterval } from "@/lib/polling";
 
 // Renders a translated string, turning <b>…</b> spans into bold elements, so a sentence with emphasis stays one key.
 function rich(s: string): React.ReactNode[] {
@@ -64,10 +64,11 @@ const MAX_TOKENS_FIELD_HINTS: Record<string, string> = {
   anthropic: t("Only selectable for the openai format. Anthropic's field name is fixed as max_tokens."),
   "openai-responses": t("Only selectable for the openai format. The Responses API's field name is fixed as max_output_tokens."),
   ollama: t("Only selectable for the openai format. Ollama's field name is fixed as max_tokens."),
+  chatgpt: t("ChatGPT plan usage does not accept an output-cap field during the current preview."),
 };
 // LLM profile formats. The default in the create form is "anthropic"; "ollama" is the
 // keyless local-server format (base URL defaults to http://127.0.0.1:11434/v1).
-type ProfileFormat = "anthropic" | "openai" | "openai-responses" | "ollama";
+type ProfileFormat = "anthropic" | "openai" | "openai-responses" | "ollama" | "chatgpt";
 const OLLAMA_DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1";
 const EFFORT_LEVELS: { value: string; label: string }[] = [
   { value: NONE, label: t("Not sent (default)") },
@@ -84,12 +85,19 @@ function cooldownText(secs: number) {
   return t("{n}min", { n: Math.ceil(secs / 60) });
 }
 
-// The "healthy or not" badge a profile shows on its card. A profile without a Key cannot send any request at all — say that before the breaker;
-// the exception is Ollama, a keyless local server that IS callable without a key. The other states come from the pool's breaker
+// The "healthy or not" badge a profile shows on its card. A profile without usable credentials cannot send any request at all.
+// Ollama runs keyless and ChatGPT uses its OAuth connection. The other states come from the pool's breaker
 // records (with polling off no new records appear, so "healthy" = no known failure).
 type Health = { label: string; cls: string; hint?: string };
-function healthOf(p: LLMProfile, m?: LLMPoolMember): Health {
-  if (!p.api_key_hint && p.format !== "ollama") {
+function healthOf(p: LLMProfile, m?: LLMPoolMember, chatGPTConnected = false): Health {
+  if (p.format === "chatgpt" && !chatGPTConnected) {
+    return {
+      label: t("Not connected"),
+      cls: "border-muted-foreground/40 text-muted-foreground",
+      hint: t("Choose Continue with ChatGPT above to connect this profile."),
+    };
+  }
+  if (!p.api_key_hint && p.format !== "ollama" && p.format !== "chatgpt") {
     return {
       label: t("No Key configured"),
       cls: "border-muted-foreground/40 text-muted-foreground",
@@ -234,7 +242,7 @@ function PoolSheet({
                 {inChain.length < 2 && (
                   <p className="text-muted-foreground text-xs">
                     {t(
-                      "Only {count} usable profile(s) right now, so the pool has no effect — at least 2 usable profiles (API Key set, or Ollama) with pool participation are required.",
+                      "Only {count} usable profile(s) right now, so the pool has no effect — at least 2 usable profiles (API key, Ollama, or connected ChatGPT) with pool participation are required.",
                       { count: inChain.length },
                     )}
                   </p>
@@ -368,7 +376,7 @@ function ProfileSheet({
     if (!open) return;
     setName(profile?.name ?? "");
     setFormat(
-      profile?.format === "openai" || profile?.format === "openai-responses" || profile?.format === "ollama"
+      profile?.format === "openai" || profile?.format === "openai-responses" || profile?.format === "ollama" || profile?.format === "chatgpt"
         ? profile.format
         : "anthropic",
     );
@@ -411,13 +419,13 @@ function ProfileSheet({
     setModels([]);
     setModelQuery("");
     try {
-      const r = await api.fetchLLMModels(format, baseUrl, apiKey, proxy, profileId);
-      if (r.ok && r.models && r.models.length > 0) {
-        setModels(r.models);
+      const loaded = format === "chatgpt" ? await api.chatGPTModels() : (await api.fetchLLMModels(format, baseUrl, apiKey, proxy, profileId)).models ?? [];
+      if (loaded.length > 0) {
+        setModels(loaded);
         setModelsOpen(true);
-        toast.success(t("Loaded {count} models", { count: r.models.length }));
+        toast.success(t("Loaded {count} models", { count: loaded.length }));
       } else {
-        toast.error(t("Failed to load models: {error}", { error: r.error ?? t("no models returned") }));
+        toast.error(t("Failed to load models: {error}", { error: t("no models returned") }));
       }
     } catch (e) {
       toast.error(t("Error loading models: {error}", { error: (e as Error).message }));
@@ -440,6 +448,7 @@ function ProfileSheet({
         proxy,
         toStore(thinkingType),
         toStore(effort),
+        toStore(maxTokensField),
         profileId,
         streaming,
         sessionHeaderKey.trim(),
@@ -471,7 +480,7 @@ function ProfileSheet({
         name: name.trim(),
         format,
         model: model.trim(),
-        base_url: baseUrl.trim(),
+        base_url: format === "chatgpt" ? "https://api.openai.com/v1" : baseUrl.trim(),
         proxy: proxy.trim(),
         api_key: apiKey,
         rate_per_second: Number(rps) || 0,
@@ -481,8 +490,8 @@ function ProfileSheet({
         reasoning_effort: toStore(effort),
         priority: Number(priority) || 0,
         pool_exclude: poolExclude,
-        streaming,
-        max_tokens: Math.max(0, Number(maxTokens) || 0),
+        streaming: format === "chatgpt" ? true : streaming,
+        max_tokens: format === "chatgpt" ? 0 : Math.max(0, Number(maxTokens) || 0),
         // The field-name switch only matters for openai (Chat Completions); every other format falls back to the default,
         // and the backend re-applies the same normalization; this just keeps the UI from sending contradictory values.
         max_tokens_field: format === "openai" ? toStore(maxTokensField) : "",
@@ -505,8 +514,13 @@ function ProfileSheet({
   }
 
   let keyPlaceholder = "sk-…";
+  let keyLabel = "API Key";
   if (format === "ollama") {
     keyPlaceholder = t("optional — a local Ollama server runs keyless");
+    keyLabel = t("API Key (optional for Ollama)");
+  } else if (format === "chatgpt") {
+    keyPlaceholder = t("Managed by Continue with ChatGPT");
+    keyLabel = t("Authentication");
   } else if (keyHint) {
     keyPlaceholder = t("Set ({hint}); leave empty to keep it", { hint: keyHint });
   }
@@ -555,6 +569,7 @@ function ProfileSheet({
                   <SelectItem value="openai">OpenAI (Chat Completions)</SelectItem>
                   <SelectItem value="openai-responses">OpenAI (Responses API)</SelectItem>
                   <SelectItem value="ollama">{t("Ollama (local, no key needed)")}</SelectItem>
+                  <SelectItem value="chatgpt">{t("ChatGPT plan (no API key)")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -697,9 +712,7 @@ function ProfileSheet({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="p-api-key">
-              {format === "ollama" ? t("API Key (optional for Ollama)") : "API Key"}
-            </Label>
+            <Label htmlFor="p-api-key">{keyLabel}</Label>
             <Input
               id="p-api-key"
               type="password"
@@ -713,6 +726,7 @@ function ProfileSheet({
               spellCheck={false}
               data-1p-ignore="true"
               data-lpignore="true"
+              disabled={format === "chatgpt"}
             />
           </div>
 
@@ -906,6 +920,7 @@ export default function LLMPage() {
   const [profiles, setProfiles] = React.useState<LLMProfile[]>([]);
   const [pool, setPool] = React.useState<LLMPoolStatus | null>(null);
   const [poolOpen, setPoolOpen] = React.useState(false);
+  const [chatGPT, setChatGPT] = React.useState<ChatGPTConnectionStatus | null>(null);
   // The drawer's open flag and its content are stored separately: editing stays put on close, otherwise during the closing animation the title would flash
   // from "Edit X" to "New". editing = null means create.
   const [editOpen, setEditOpen] = React.useState(false);
@@ -930,6 +945,11 @@ export default function LLMPage() {
       /* ignore */
     }
     await loadPool();
+    try {
+      setChatGPT(await api.chatGPTStatus());
+    } catch {
+      setChatGPT(null);
+    }
   }, [loadPool]);
 
   React.useEffect(() => {
@@ -967,6 +987,16 @@ export default function LLMPage() {
     }
   }
 
+  async function disconnectChatGPT() {
+    try {
+      await api.disconnectChatGPT();
+      toast.success(t("Disconnected ChatGPT account"));
+      await load();
+    } catch (e) {
+      toast.error(t("Disconnect failed: {error}", { error: (e as Error).message }));
+    }
+  }
+
   const poolOn = pool?.enabled ?? false;
 
   return (
@@ -995,6 +1025,36 @@ export default function LLMPage() {
         </div>
       </div>
 
+      <Card className="gap-3 py-4">
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 px-4">
+          <div className="grid gap-1">
+            <div className="flex items-center gap-2 font-medium">
+              {t("ChatGPT plan")}
+              <Badge variant="outline" className={chatGPT?.connected ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>
+                {chatGPT?.connected ? t("Connected") : t("Not connected")}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {chatGPT?.connected
+                ? t("Signed in as {email}. Requests from ChatGPT profiles use your plan allowance instead of an API key.", { email: chatGPT.email ?? t("ChatGPT account") })
+                : t("Use your ChatGPT account and plan allowance without storing an OpenAI API key.")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {chatGPT?.connected && chatGPT.manage_url && (
+              <Button size="sm" variant="outline" asChild>
+                <a href={chatGPT.manage_url} target="_blank" rel="noreferrer">{t("Manage usage")}</a>
+              </Button>
+            )}
+            {chatGPT?.connected ? (
+              <Button size="sm" variant="outline" onClick={() => void disconnectChatGPT()}>{t("Disconnect")}</Button>
+            ) : (
+              <Button size="sm" onClick={() => window.location.assign("/api/chatgpt/connect")}>{t("Continue with ChatGPT")}</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="profiles" className="flex-1">
         <TabsList>
           <TabsTrigger value="profiles">{t("Model profiles")}</TabsTrigger>
@@ -1004,7 +1064,7 @@ export default function LLMPage() {
         <TabsContent value="profiles" className="mt-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {profiles.map((p) => {
-              const h = healthOf(p, health.get(p.id));
+              const h = healthOf(p, health.get(p.id), chatGPT?.connected ?? false);
               return (
                 // biome-ignore lint/a11y/useSemanticElements: the card contains its own action buttons; a native <button> would nest buttons (invalid HTML)
                 <Card

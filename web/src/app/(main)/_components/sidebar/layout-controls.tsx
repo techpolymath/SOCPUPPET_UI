@@ -21,7 +21,7 @@ import { persistPreference } from "@/lib/preferences/preferences-storage";
 import { THEME_PRESET_OPTIONS, type ThemeMode, type ThemePreset } from "@/lib/preferences/theme";
 import { applyThemePreset } from "@/lib/preferences/theme-utils";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
-import { type Locale, LOCALES, locale, setLocale, t } from "@/i18n";
+import { t } from "@/i18n";
 
 export function LayoutControls() {
   const themeMode = usePreferencesStore((s) => s.themeMode);
@@ -111,24 +111,6 @@ export function LayoutControls() {
             <p className="text-muted-foreground text-xs">{t("Customize your dashboard layout preferences.")}</p>
           </div>
           <div className="space-y-3 **:data-[slot=toggle-group]:w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs">
-            <div className="space-y-1">
-              <Label className="font-medium text-xs">{t("Language")}</Label>
-              <ToggleGroup
-                size="sm"
-                spacing={0}
-                variant="outline"
-                type="single"
-                value={locale}
-                onValueChange={(v: string) => v && setLocale(v as Locale)}
-              >
-                {LOCALES.map((l) => (
-                  <ToggleGroupItem key={l.code} value={l.code} aria-label={l.label}>
-                    {l.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-
             <div className="space-y-1">
               <Label className="font-medium text-xs">{t("Theme Preset")}</Label>
               <Select value={themePreset} onValueChange={onThemePresetChange}>

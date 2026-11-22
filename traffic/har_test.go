@@ -197,7 +197,7 @@ func TestHARRoundTripPlainBase64BinaryEmptyAndLargeBlob(t *testing.T) {
 	if meta.Exported != 4 || meta.TotalMatched != 4 || meta.Truncated || meta.TruncatedReason != "" {
 		t.Fatalf("ExportHAR meta = %+v", meta)
 	}
-	if exported.Log.Version != "1.2" || exported.Log.Creator.Name != "ARTEX" || exported.Log.Creator.Version != "2.3.0" {
+	if exported.Log.Version != "1.2" || exported.Log.Creator.Name != "SOCPuppet" || exported.Log.Creator.Version != "2.3.0" {
 		t.Fatalf("ExportHAR header = %+v", exported.Log)
 	}
 	if len(exported.Log.Entries) != 4 {

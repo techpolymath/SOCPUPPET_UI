@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="web/public/logo.svg" width="84" alt="ARTEX logo" />
+<img src="web/public/logo.svg" width="84" alt="SOCPuppet logo" />
 
-# ARTEX
+# SOCPuppet
 
 **Autonomous penetration testing that keeps its receipts.**
 
-(upstream: [Autumn-27/ARTEX](https://github.com/Autumn-27), AGPL-3.0)
+(customized from [ARTEX](https://github.com/BaaRai/ARTEX), AGPL-3.0)
 
 Self-hosted multi-agent offensive security. A planner explores, workers run real tools,
 and every finding stays bound to the assets and HTTP traffic that prove it.
@@ -22,7 +22,7 @@ and every finding stays bound to the assets and HTTP traffic that prove it.
 
 ---
 
-ARTEX is a self-hosted, LLM-driven penetration testing platform. It is not a chat wrapper around
+SOCPuppet is a self-hosted, LLM-driven penetration testing platform based on ARTEX. It is not a chat wrapper around
 a scanner: a planner splits a goal into intents, workers execute them with real tools, and the
 results are written back into **two linked graphs**: one for what you know about the target, one
 for how the test is progressing. Every finding can carry the captured request and response that

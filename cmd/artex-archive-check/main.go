@@ -33,7 +33,7 @@ func check() error {
 		return err
 	}
 	defer os.RemoveAll(dir)
-	data := []byte("ARTEX object storage connectivity check " + time.Now().UTC().Format(time.RFC3339Nano))
+	data := []byte("SOCPuppet object storage connectivity check " + time.Now().UTC().Format(time.RFC3339Nano))
 	h := sha256.Sum256(data)
 	checksum := hex.EncodeToString(h[:])
 	uri := s.URI(0, time.Now().UnixNano(), checksum)

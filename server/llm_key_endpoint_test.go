@@ -11,6 +11,7 @@ import (
 
 	"github.com/Autumn-27/artex/agent"
 	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/norma/llm"
 )
 
 func TestSameLLMEndpoint(t *testing.T) {
@@ -57,6 +58,34 @@ func postJSON(t *testing.T, h http.HandlerFunc, path string, body map[string]any
 	var resp map[string]any
 	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
 	return resp
+}
+
+// The connection test must use the same OpenAI output-cap field as task
+// execution. Reasoning models reject the legacy max_tokens key outright.
+func TestLLMTestForwardsMaxCompletionTokens(t *testing.T) {
+	var got map[string]any
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"1","object":"chat.completion","model":"gpt-test","choices":[{"index":0,"message":{"role":"assistant","content":"OK"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1}}`))
+	}))
+	t.Cleanup(fake.Close)
+
+	s := &Server{}
+	resp := postJSON(t, s.testLLM, "/api/llm/test", map[string]any{
+		"provider": "openai", "model": "gpt-test", "base_url": fake.URL,
+		"api_key": "test-key", "streaming": false,
+		"max_tokens_field": llm.MaxTokensFieldCompletion,
+	})
+	if resp["ok"] != true {
+		t.Fatalf("connection test failed: %v", resp)
+	}
+	if got["max_completion_tokens"] != float64(8192) {
+		t.Fatalf("max_completion_tokens = %#v, want 8192; body=%v", got["max_completion_tokens"], got)
+	}
+	if _, legacy := got["max_tokens"]; legacy {
+		t.Fatalf("legacy max_tokens must be absent; body=%v", got)
+	}
 }
 
 // The global key must not follow a base_url typed into the test form.

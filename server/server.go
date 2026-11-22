@@ -42,15 +42,16 @@ import (
 // Defaults to "dev" for local builds. Exposed to the frontend via GET /api/health.
 var BuildVersion = "dev"
 
-// Server exposes the ARTEX backend over a JSON HTTP API for the shadcn/ui
+// Server exposes the SOCPuppet backend over a JSON HTTP API for the shadcn/ui
 // frontend.
 type Server struct {
 	m      *Manager
 	engine *Engine
 	ctx    context.Context
 
-	skillDir string // root directory for skill subdirectories
-	jwtKey   []byte // HS256 signing key loaded from / generated into keyDir/jwt.key
+	skillDir    string              // root directory for skill subdirectories
+	jwtKey      []byte              // HS256 signing key loaded from / generated into keyDir/jwt.key
+	chatGPTAuth *chatGPTAuthManager // OAuth tokens for ChatGPT-plan-backed LLM profiles
 
 	scrubSecrets bool // drop ARTEX_PG_DSN and the API keys from the environment once read (binary only)
 
@@ -200,6 +201,7 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 		provByProfile:  map[int64]*provEntry{},
 		taskAgents:     map[string]*taskAgentBundle{}, archiveWake: make(chan struct{}, 1),
 		loginLimit: newLoginLimiter(time.Now), pwdLimit: newLoginLimiter(time.Now)}
+	s.chatGPTAuth = newChatGPTAuthManager(m.pg)
 	s.llmHealth, s.llmHealthSync = newLLMHealthRegistry(ctx, m.pg)
 	for _, o := range opts {
 		o(s)
@@ -422,6 +424,12 @@ func (s *Server) loadLLMConfig() (agent.Config, bool) {
 		return agent.Config{}, false
 	}
 	cfg := agent.ConfigFrom(p.Format, p.Model, p.BaseURL, p.APIKey, p.Proxy)
+	if cfg.Format == agent.FormatChatGPT {
+		if _, connected, err := s.chatGPTAuth.connected(); err != nil || !connected {
+			return cfg, false
+		}
+		cfg.ChatGPTTokenSource = s.chatGPTAuth
+	}
 	cfg.RatePerSecond, cfg.RatePerMinute = p.RatePerSecond, p.RatePerMinute
 	cfg.ContextWindowK = p.ContextWindowK
 	cfg.ThinkingType = p.ThinkingType
@@ -431,7 +439,7 @@ func (s *Server) loadLLMConfig() (agent.Config, bool) {
 	cfg.SessionHeaderKey = p.SessionHeaderKey
 	cfg.UserAgent = p.UserAgent
 	s.applyProfileRetry(&cfg, p)
-	// Ollama profiles run keyless (local server); the other formats need a key.
+	// Ollama runs keyless; ChatGPT uses the OAuth token source attached above.
 	if cfg.APIKey == "" && cfg.NeedsAPIKey() {
 		return cfg, false
 	}
@@ -601,6 +609,12 @@ func (s *Server) loadProfileConfig(id int64) (agent.Config, bool) {
 		return agent.Config{}, false
 	}
 	cfg := agent.ConfigFrom(p.Format, p.Model, p.BaseURL, p.APIKey, p.Proxy)
+	if cfg.Format == agent.FormatChatGPT {
+		if _, connected, err := s.chatGPTAuth.connected(); err != nil || !connected {
+			return cfg, false
+		}
+		cfg.ChatGPTTokenSource = s.chatGPTAuth
+	}
 	cfg.RatePerSecond, cfg.RatePerMinute = p.RatePerSecond, p.RatePerMinute
 	cfg.ContextWindowK = p.ContextWindowK
 	cfg.ThinkingType = p.ThinkingType
@@ -845,6 +859,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/llm", s.getLLM)
 	mux.HandleFunc("POST /api/llm", s.setLLM)
 	mux.HandleFunc("POST /api/llm/test", s.testLLM)
+	mux.HandleFunc("GET /api/chatgpt/status", s.chatGPTStatus)
+	mux.HandleFunc("GET /api/chatgpt/connect", s.chatGPTConnect)
+	mux.HandleFunc("GET /api/chatgpt/models", s.chatGPTModels)
+	mux.HandleFunc("POST /api/chatgpt/disconnect", s.chatGPTDisconnect)
 
 	// asset system
 	mux.HandleFunc("GET /api/assets", s.listAssets)
@@ -1079,6 +1097,10 @@ func (s *Server) Handler() http.Handler {
 	api := cors(s.requireAuth(mux))
 	root := http.NewServeMux()
 	root.Handle("/api/", api)
+	// OpenAI redirects the system browser to this exact loopback path. OAuth
+	// state/PKCE validation protects it; it cannot require the console JWT because
+	// the authorization server does not possess that session.
+	root.HandleFunc("GET /auth/callback", s.chatGPTCallback)
 	webui := s.webuiHandler()
 	root.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Keep the operator console out of cross-origin frames and referrers.
@@ -1100,7 +1122,7 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 		return
 	}
-	out := map[string]any{"ok": true, "service": "artex", "version": BuildVersion}
+	out := map[string]any{"ok": true, "service": "socpuppet", "version": BuildVersion}
 	// Opt-in only (ARTEX_UPDATE_CHECK); off, this returns "" without any request.
 	if latest := updates.newerVersion(r.Context(), time.Now(), BuildVersion); latest != "" {
 		out["latest_version"] = latest
@@ -1498,6 +1520,15 @@ func (s *Server) setLLM(w http.ResponseWriter, r *http.Request) {
 		s.cfgMu.Unlock()
 	}
 	cfg := agent.ConfigFrom(req.Provider, req.Model, req.BaseURL, req.APIKey, req.Proxy)
+	if cfg.Format == agent.FormatChatGPT {
+		if _, connected, err := s.chatGPTAuth.connected(); err != nil || !connected {
+			writeErr(w, 400, "ChatGPT plan is not connected; choose Continue with ChatGPT first")
+			return
+		}
+		cfg.ChatGPTTokenSource = s.chatGPTAuth
+		cfg.Stream = true
+		cfg.MaxTokens = 0
+	}
 	cfg.RatePerSecond, cfg.RatePerMinute = req.RatePerSecond, req.RatePerMinute
 	cfg.ThinkingType = req.ThinkingType
 	cfg.ReasoningEffort = req.ReasoningEffort
@@ -1507,7 +1538,7 @@ func (s *Server) setLLM(w http.ResponseWriter, r *http.Request) {
 		}
 		cfg.ContextWindowK = k
 	}
-	// Keyless formats (Ollama) need no key; the others keep/require one.
+	// Keyless/OAuth formats skip API-key fallback; the others keep/require one.
 	if cfg.APIKey == "" && cfg.NeedsAPIKey() {
 		s.cfgMu.Lock()
 		cfg.APIKey = s.llmCfg.APIKey // keep existing key if not re-entered
@@ -1542,17 +1573,18 @@ func (s *Server) setLLM(w http.ResponseWriter, r *http.Request) {
 // testLLM makes a real minimal completion to verify the config works.
 func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Provider         string `json:"provider"`
-		Model            string `json:"model"`
-		BaseURL          string `json:"base_url"`
-		Proxy            string `json:"proxy"`
-		APIKey           string `json:"api_key"`
-		ThinkingType     string `json:"thinking_type"`
-		ReasoningEffort  string `json:"reasoning_effort"`
-		ProfileID        *int64 `json:"profile_id"`         // passed when testing a stored profile: if api_key is empty, its stored key is used
-		Streaming        *bool  `json:"streaming"`          // omitted = streaming, the same defaults as when saving a profile
-		SessionHeaderKey string `json:"session_header_key"` // non-empty = the test also sends this custom session header, with a one-off random session id as the value
-		UserAgent        string `json:"user_agent"`         // non-empty = the test overrides the User-Agent header with this value (mirrors production)
+		Provider         string  `json:"provider"`
+		Model            string  `json:"model"`
+		BaseURL          string  `json:"base_url"`
+		Proxy            string  `json:"proxy"`
+		APIKey           string  `json:"api_key"`
+		ThinkingType     string  `json:"thinking_type"`
+		ReasoningEffort  string  `json:"reasoning_effort"`
+		MaxTokensField   *string `json:"max_tokens_field"`   // nil = use the stored profile value; empty = explicitly use max_tokens
+		ProfileID        *int64  `json:"profile_id"`         // passed when testing a stored profile: if api_key is empty, its stored key is used
+		Streaming        *bool   `json:"streaming"`          // omitted = streaming, the same defaults as when saving a profile
+		SessionHeaderKey string  `json:"session_header_key"` // non-empty = the test also sends this custom session header, with a one-off random session id as the value
+		UserAgent        string  `json:"user_agent"`         // non-empty = the test overrides the User-Agent header with this value (mirrors production)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, 400, err.Error())
@@ -1600,12 +1632,32 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimSpace(req.ReasoningEffort) == "" {
 			req.ReasoningEffort = stored.ReasoningEffort
 		}
+		if req.MaxTokensField == nil {
+			field := stored.MaxTokensField
+			req.MaxTokensField = &field
+		}
 	}
 	cfg := agent.ConfigFrom(req.Provider, req.Model, req.BaseURL, req.APIKey, req.Proxy)
+	if cfg.Format == agent.FormatChatGPT {
+		if _, connected, err := s.chatGPTAuth.connected(); err != nil || !connected {
+			writeJSON(w, 200, map[string]any{"ok": false, "error": "ChatGPT plan is not connected; choose Continue with ChatGPT first"})
+			return
+		}
+		cfg.ChatGPTTokenSource = s.chatGPTAuth
+		cfg.Stream = true
+		cfg.MaxTokens = 0
+	}
 	// mirror production: send the SAME thinking params so a provider that rejects the
 	// reasoning_effort/thinking field fails the test too (no false "test ok, run 400").
 	cfg.ThinkingType = req.ThinkingType
 	cfg.ReasoningEffort = req.ReasoningEffort
+	// The output-cap field must match production too. In particular, current
+	// OpenAI reasoning models reject max_tokens and require
+	// max_completion_tokens. Unknown values and non-OpenAI formats retain the
+	// provider default, matching profile-save normalization.
+	if cfg.Format == llm.FormatOpenAI && req.MaxTokensField != nil && *req.MaxTokensField == llm.MaxTokensFieldCompletion {
+		cfg.MaxTokensField = llm.MaxTokensFieldCompletion
+	}
 	// Likewise, the streaming mode follows that profile's choice: endpoints supporting only one of the two channels must fail
 	// here already, instead of discovering mid-conversation that "the profile that passed the test cannot run at all".
 	if req.Streaming != nil {
@@ -1634,7 +1686,7 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cfg.UserAgent = ua
-	// Keyless formats (Ollama) skip the key resolution entirely.
+	// Keyless/OAuth formats skip API-key resolution entirely.
 	if cfg.NeedsAPIKey() {
 		// API key resolution precedence: form input > the named profile's stored key > the global config's key.
 		// A stored profile's key is never sent back to the browser, so the form is empty when testing a stored profile and the key comes from the DB.

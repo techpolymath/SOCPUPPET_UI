@@ -70,7 +70,7 @@ export default function SetupPage() {
           <div className="absolute size-60 rounded-full border border-primary-foreground/15" />
           <div className="absolute size-40 rounded-full border border-primary-foreground/20" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="ARTEX" width={160} height={160} className="relative brightness-0 invert" />
+          <img src="/logo.png" alt="SOCPuppet" width={160} height={160} className="relative object-contain" />
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export default function SetupPage() {
                     "The backend or database is temporarily unavailable. To avoid overwriting a password already set on this instance, setup is temporarily closed — restore the service and try again.",
                   )
                 : t(
-                    "First time using ARTEX? Enter the setup token from the server log, then set a login password for the account (at least 12 characters)",
+                    "First time using SOCPuppet? Enter the setup token from the server log, then set a login password for the account (at least 12 characters)",
                   )}
             </p>
           </div>

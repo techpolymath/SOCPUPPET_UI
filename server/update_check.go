@@ -13,7 +13,7 @@ import (
 )
 
 // The update check is opt-in: only ARTEX_UPDATE_CHECK=1 (or true/on/yes) lets
-// the backend ask the public GitHub releases API for the latest ARTEX tag.
+// the backend ask the public GitHub releases API for the latest upstream ARTEX tag.
 // Unset, it makes no request at all and the UI shows no banner.
 const updateCheckURL = "https://api.github.com/repos/BaaRai/ARTEX/releases/latest"
 const updateCheckInterval = 24 * time.Hour
@@ -66,7 +66,7 @@ func fetchLatestRelease(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "artex-update-check")
+	req.Header.Set("User-Agent", "socpuppet-update-check")
 	req.Header.Set("Accept", "application/vnd.github+json")
 	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
 	if err != nil {

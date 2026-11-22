@@ -41,9 +41,9 @@ import (
 // messages API (the web_search_20250305 server tool), so each search consumes one
 // model call, and the search request is issued by DeepSeek's servers — it does NOT
 // go through the local Proxy, nor into the traffic recording.
-// KeenableSearchTitle is the X-Keenable-Title value ARTEX sends. Fixed in v1:
+// KeenableSearchTitle is the X-Keenable-Title value SOCPuppet sends. Fixed in v1:
 // the title identifies the calling application to the provider.
-const KeenableSearchTitle = "ARTEX"
+const KeenableSearchTitle = "SOCPuppet"
 
 type WebSearchOpts struct {
 	Enabled     bool

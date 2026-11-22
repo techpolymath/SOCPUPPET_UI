@@ -173,7 +173,7 @@ func TestCookieCSRFThroughRealMux(t *testing.T) {
 	stale := token(rec)
 	// Login the same way, then from the browser: the login page posts from the
 	// console's own origin and may still hold the cookie of an earlier session.
-	login := `{"username":"ARTEX","password":"correct-horse-1"}`
+	login := `{"username":"SOCPuppet","password":"correct-horse-1"}`
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, csrfRequest("POST", "/api/auth/login", login, nil))
 	token(rec)

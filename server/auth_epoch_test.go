@@ -98,7 +98,7 @@ func TestChangePasswordRevokesOldTokenAndKeepsItWhenSaveFails(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"ARTEX","password":"correct-horse-2"}`)))
+	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"SOCPuppet","password":"correct-horse-2"}`)))
 	if w.Code != 200 {
 		t.Fatalf("login status=%d body=%s", w.Code, w.Body.String())
 	}
@@ -138,12 +138,12 @@ func TestChangePasswordRevokesOldTokenAndKeepsItWhenSaveFails(t *testing.T) {
 		t.Fatal("a failed save revoked the current token")
 	}
 	w = httptest.NewRecorder()
-	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"ARTEX","password":"correct-horse-2"}`)))
+	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"SOCPuppet","password":"correct-horse-2"}`)))
 	if w.Code != 200 {
 		t.Fatalf("old password after a failed save: status=%d body=%s", w.Code, w.Body.String())
 	}
 	w = httptest.NewRecorder()
-	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"ARTEX","password":"correct-horse-3"}`)))
+	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"SOCPuppet","password":"correct-horse-3"}`)))
 	if w.Code == 200 {
 		t.Fatal("new password was stored even though the version write failed")
 	}
@@ -219,7 +219,7 @@ func TestLoginRereadsPasswordVersionWhenUnreadable(t *testing.T) {
 		t.Fatalf("state=%d want unreadable", s.pwdState.Load())
 	}
 	w = httptest.NewRecorder()
-	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"ARTEX","password":"correct-horse-1"}`)))
+	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"SOCPuppet","password":"correct-horse-1"}`)))
 	if w.Code != 503 {
 		t.Fatalf("login while unreadable: status=%d want 503 body=%s", w.Code, w.Body.String())
 	}
@@ -231,7 +231,7 @@ func TestLoginRereadsPasswordVersionWhenUnreadable(t *testing.T) {
 		t.Fatal(err)
 	}
 	w = httptest.NewRecorder()
-	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"ARTEX","password":"correct-horse-1"}`)))
+	s.authLogin(w, httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"username":"SOCPuppet","password":"correct-horse-1"}`)))
 	if w.Code != 200 {
 		t.Fatalf("login after the version can be read: status=%d body=%s", w.Code, w.Body.String())
 	}

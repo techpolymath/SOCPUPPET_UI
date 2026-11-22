@@ -572,8 +572,8 @@ func TestJWTSubject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := jwtSubject(token, key); got != "ARTEX" {
-		t.Fatalf("subject = %q, want ARTEX", got)
+	if got := jwtSubject(token, key); got != "SOCPuppet" {
+		t.Fatalf("subject = %q, want SOCPuppet", got)
 	}
 	if got := jwtSubject(token, []byte("another key, another key, another")); got != "" {
 		t.Fatalf("subject of a token signed with another key = %q, want none", got)

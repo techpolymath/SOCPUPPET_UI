@@ -23,6 +23,7 @@ import type {
   BatchCategoryItem,
   BatchControlItem,
   ChatAttachment,
+  ChatGPTConnectionStatus,
   CommandRecord,
   Company,
   CompanyScopeMutation,
@@ -196,7 +197,7 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
 // send the cookie.
 // mockReport returns a canned Markdown report for the demo.
 function mockReport(_task?: string): string {
-  return `# ARTEX Penetration Test Report — Acme Corp
+  return `# SOCPuppet Penetration Test Report — Acme Corp
 
 ## Overview
 - Scope: acme.com (incl. www / admin / api / shop / vpn subdomains)
@@ -1116,6 +1117,7 @@ export const api = {
     proxy = "",
     thinking_type = "",
     reasoning_effort = "",
+    max_tokens_field = "",
     profile_id?: number,
     streaming = true, // test with the profile's real streaming mode so "streaming works, non-streaming does not" never leaks into conversations
     session_header_key = "", // non-empty = the test request also carries this custom session header (value is a one-off session id)
@@ -1130,6 +1132,7 @@ export const api = {
       api_key,
       thinking_type,
       reasoning_effort,
+      max_tokens_field,
       profile_id,
       streaming,
       session_header_key,
@@ -1175,6 +1178,9 @@ export const api = {
       proxy,
       profile_id,
     }),
+  chatGPTStatus: () => get<ChatGPTConnectionStatus>("/chatgpt/status"),
+  chatGPTModels: () => get<{ models: string[] }>("/chatgpt/models").then((r) => arr(r.models)),
+  disconnectChatGPT: () => post<{ ok: boolean }>("/chatgpt/disconnect", {}),
 
   // ---- agents ----
   agents: () => get<{ agents: Agent[] }>("/agents").then((r) => arr(r.agents)),

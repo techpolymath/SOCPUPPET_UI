@@ -1,4 +1,4 @@
-// Command artex runs the ARTEX backend: the dual PostgreSQL graph stores,
+// Command artex runs the SOCPuppet backend: the dual PostgreSQL graph stores,
 // the event-driven exploration engine, and the JSON HTTP API consumed by the
 // shadcn/ui frontend.
 package main
@@ -59,17 +59,18 @@ func logConfigSnapshot(s configSnapshot) {
 var version = "dev"
 
 const banner = `
-    _    ____ _____ _______  __
-   / \  |  _ \_   _| ____\ \/ /
-  / _ \ | |_) || | |  _|  \  /
- / ___ \|  _ < | | | |___ /  \
-/_/   \_\_| \_\|_| |_____/_/\_\
+  ____   ___   ____ ____                         _
+ / ___| / _ \ / ___|  _ \ _   _ _ __  _ __   ___| |_
+ \___ \| | | | |   | |_) | | | | '_ \| '_ \ / _ \ __|
+  ___) | |_| | |___|  __/| |_| | |_) | |_) |  __/ |_
+ |____/ \___/ \____|_|    \__,_| .__/| .__/ \___|\__|
+                                |_|   |_|
 `
 
 // printBanner writes the startup banner + version/runtime info to stdout.
 func printBanner(addr string) {
 	fmt.Print(banner)
-	fmt.Println("  AI autonomous penetration testing system")
+	fmt.Println("  SOCPuppet autonomous penetration testing system")
 	fmt.Printf("  version %s  ·  %s/%s  ·  %s  ·  listening on %s\n\n",
 		version, runtime.GOOS, runtime.GOARCH, runtime.Version(), addr)
 }
@@ -212,7 +213,7 @@ func run() int {
 	}
 
 	go func() {
-		log.Printf("ARTEX %s backend listening on %s (data=%s, workers=%d)", version, *addr, *dataDir, mgr.Workers())
+		log.Printf("SOCPuppet %s backend listening on %s (data=%s, workers=%d)", version, *addr, *dataDir, mgr.Workers())
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("serve: %v", err)
 		}

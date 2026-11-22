@@ -12,6 +12,7 @@ package agent
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -75,10 +76,11 @@ type Config struct {
 	MaxTokens int
 	// MaxTokensField selects which request field carries MaxTokens, only effective for
 	// format=openai:
-	//   "" = max_tokens (default); "max_completion_tokens" = the newer field.
+	//   "" = provider/model default; "max_completion_tokens" = the newer field.
 	// OpenAI reasoning models (o-series/GPT-5) accept only the latter and reject
-	// max_tokens outright with unsupported_parameter, while most compatible gateways
-	// accept only the former — so no auto-detection; the user picks per endpoint.
+	// max_tokens outright with unsupported_parameter. An empty value is promoted to
+	// max_completion_tokens only for those model families on OpenAI's official API;
+	// compatible gateways retain the legacy max_tokens default.
 	MaxTokensField string
 	// SessionHeaderKey, when non-empty, makes every LLM request carry a custom HTTP
 	// header named by this value, with the [current session's session id] as its value
@@ -96,6 +98,18 @@ type Config struct {
 	// global policy → built-in default, resolved server-side). See RetryConfig for
 	// the per-layer semantics; zero values = fully inherit the built-in defaults.
 	Retry RetryConfig
+	// ChatGPTTokenSource is set only for the ChatGPT-plan OAuth format. Keeping
+	// the source behind a pointer/interface lets a long-running provider obtain a
+	// refreshed one-hour access token without rebuilding every agent.
+	ChatGPTTokenSource ChatGPTTokenSource
+}
+
+// ChatGPTTokenSource supplies and invalidates OAuth access tokens for the
+// ChatGPT-plan provider. The server implementation persists rotating refresh
+// tokens encrypted at rest; the provider never sees those credentials.
+type ChatGPTTokenSource interface {
+	AccessToken(context.Context) (string, error)
+	InvalidateAccessToken(string)
 }
 
 // RetryConfig holds the retry parameters that travel with one LLM config. The
@@ -142,6 +156,11 @@ const (
 // OpenAI's public endpoint).
 const FormatOllama llm.Format = "ollama"
 
+// FormatChatGPT uses the public Responses API with an OAuth access token whose
+// chatgpt.tokens.use.direct scope charges inference to the signed-in ChatGPT
+// plan. It is deliberately distinct from API-key-backed openai-responses.
+const FormatChatGPT llm.Format = "chatgpt"
+
 // DefaultOllamaBaseURL is the base of Ollama's OpenAI-compatible endpoint the
 // provider appends /chat/completions to. Must never end up empty: with an
 // empty BaseURL, the SDK would fall back to OpenAI's public endpoint.
@@ -172,7 +191,7 @@ func normalizeOllamaBaseURL(raw string) string {
 
 // NeedsAPIKey reports whether this provider format requires an API key to be
 // usable. Ollama (local server) is keyless; every cloud format needs one.
-func (c Config) NeedsAPIKey() bool { return c.Format != FormatOllama }
+func (c Config) NeedsAPIKey() bool { return c.Format != FormatOllama && c.Format != FormatChatGPT }
 
 // CompactionWindow returns the model context window in TOKENS for compaction
 // thresholds, resolved from the user-configured size (ContextWindowK). 0/unset →
@@ -219,11 +238,11 @@ func compactionConfig(windowTokens int) *compaction.Config {
 
 // FromEnv resolves the LLM provider config:
 //
-//	ARTEX_LLM_PROVIDER = anthropic|openai|openai-responses|ollama (default: inferred from keys)
+//	ARTEX_LLM_PROVIDER = anthropic|openai|openai-responses|ollama|chatgpt (default: inferred from keys)
 //	ARTEX_LLM_MODEL    = model id        (default: per provider)
 //	ARTEX_LLM_BASE_URL = endpoint        (optional; ollama defaults to localhost:11434/v1)
 //	ARTEX_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
-//	ANTHROPIC_API_KEY / OPENAI_API_KEY         = credentials (unused for ollama)
+//	ANTHROPIC_API_KEY / OPENAI_API_KEY         = credentials (unused for ollama/chatgpt)
 func FromEnv() (Config, bool) {
 	// Case- and space-insensitive: "Ollama" used to miss every case below and
 	// fall through to anthropic, sending ANTHROPIC_API_KEY to the Ollama base URL.
@@ -272,6 +291,12 @@ func FromEnv() (Config, bool) {
 		c.BaseURL = normalizeOllamaBaseURL(c.BaseURL)
 		if c.Model == "" {
 			c.Model = "llama3.2"
+		}
+	case "chatgpt":
+		c.Format = FormatChatGPT
+		c.BaseURL = "https://api.openai.com/v1"
+		if c.Model == "" {
+			c.Model = "gpt-6.1-sol"
 		}
 	default:
 		c.Format = llm.FormatAnthropic
@@ -324,6 +349,14 @@ func ConfigFrom(provider, model, baseURL, apiKey, proxy string) Config {
 		if c.Model == "" {
 			c.Model = "llama3.2"
 		}
+	case "chatgpt":
+		c.Format = FormatChatGPT
+		// ChatGPT-plan OAuth is supported only on OpenAI's public Responses API.
+		// Ignore a pasted/custom endpoint so account tokens can never be sent to it.
+		c.BaseURL = "https://api.openai.com/v1"
+		if c.Model == "" {
+			c.Model = "gpt-6.1-sol"
+		}
 	default:
 		c.Format = llm.FormatAnthropic
 		// provider appends "/v1/messages".
@@ -346,7 +379,7 @@ func isFalsy(s string) bool {
 }
 
 // Provider returns the short provider name
-// ("anthropic"/"openai"/"openai-responses"/"ollama").
+// ("anthropic"/"openai"/"openai-responses"/"ollama"/"chatgpt").
 func (c Config) Provider() string {
 	switch c.Format {
 	case llm.FormatOpenAI:
@@ -355,6 +388,8 @@ func (c Config) Provider() string {
 		return "openai-responses"
 	case FormatOllama:
 		return "ollama"
+	case FormatChatGPT:
+		return "chatgpt"
 	}
 	return "anthropic"
 }
@@ -384,6 +419,16 @@ func (c Config) NewProvider() (llm.Provider, error) {
 			apiKey = ollamaPlaceholderKey
 		}
 	}
+	chatGPTPlan := wireFormat == FormatChatGPT
+	if chatGPTPlan {
+		if c.ChatGPTTokenSource == nil {
+			return nil, fmt.Errorf("chatgpt plan is not connected; sign in with ChatGPT first")
+		}
+		wireFormat = llm.FormatOpenAIResponses
+		baseURL = "https://api.openai.com/v1"
+		apiKey = "oauth-managed"
+		client = chatGPTPlanHTTPClient(client, c.ChatGPTTokenSource)
+	}
 	lc := llm.Config{
 		Format:     wireFormat,
 		BaseURL:    baseURL,
@@ -396,10 +441,10 @@ func (c Config) NewProvider() (llm.Provider, error) {
 	// effort, both, or neither.
 	lc.ThinkingType = c.ThinkingType
 	lc.ReasoningEffort = c.ReasoningEffort
-	// Field-name selection for the output cap (empty = use max_tokens). The cap's
+	// Field-name selection for the output cap. The cap's
 	// VALUE is not here: it travels per round with agentcore.Options.MaxTokens; the
 	// provider only decides which key to put it under.
-	lc.MaxTokensField = c.MaxTokensField
+	lc.MaxTokensField = resolvedMaxTokensField(c)
 	// Retry params share the SDK's semantics (attempts: 0=default/negative=off;
 	// interval: 0=exponential backoff/>0=fixed), passed through verbatim.
 	lc.MaxRetries = c.Retry.ConnectAttempts
@@ -409,7 +454,155 @@ func (c Config) NewProvider() (llm.Provider, error) {
 	if c.RatePerSecond > 0 || c.RatePerMinute > 0 {
 		lc.RateLimit = &llm.RateLimit{PerSecond: c.RatePerSecond, PerMinute: c.RatePerMinute}
 	}
-	return llm.NewProvider(lc)
+	provider, err := llm.NewProvider(lc)
+	if err != nil {
+		return nil, err
+	}
+	if chatGPTPlan {
+		// The ChatGPT-plan route requires stream:true even if an internal caller
+		// asks for Complete. Aggregate the compliant stream locally in that case.
+		provider = chatGPTStreamingProvider{Provider: provider}
+	}
+	return provider, nil
+}
+
+// chatGPTStreamingProvider makes Complete compliant with the ChatGPT-plan
+// route by consuming the provider's SSE stream instead of sending stream:false.
+type chatGPTStreamingProvider struct{ llm.Provider }
+
+func (p chatGPTStreamingProvider) Complete(ctx context.Context, req llm.CompletionRequest) (llm.Message, string, llm.Usage, error) {
+	acc := llm.NewAccumulator()
+	for ev, err := range p.Stream(ctx, req) {
+		if err != nil {
+			return llm.Message{}, "", llm.Usage{}, err
+		}
+		acc.Add(ev)
+	}
+	return acc.Message(), acc.StopReason, acc.Usage, nil
+}
+
+// chatGPTPlanTransport injects the current OAuth token and rewrites Norma's
+// ordinary Responses body to the narrower request surface accepted by ChatGPT
+// plan usage. In particular, output caps and temperature are unsupported, and
+// local functions must be carried in an additional_tools input item.
+type chatGPTPlanTransport struct {
+	base   http.RoundTripper
+	tokens ChatGPTTokenSource
+}
+
+func chatGPTPlanHTTPClient(base *http.Client, tokens ChatGPTTokenSource) *http.Client {
+	clone := *base
+	rt := clone.Transport
+	if rt == nil {
+		rt = http.DefaultTransport
+	}
+	clone.Transport = &chatGPTPlanTransport{base: rt, tokens: tokens}
+	return &clone
+}
+
+func (t *chatGPTPlanTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Scheme != "https" || !strings.EqualFold(req.URL.Hostname(), "api.openai.com") || req.URL.Path != "/v1/responses" {
+		return nil, fmt.Errorf("chatgpt plan refused unexpected endpoint %s", req.URL.Redacted())
+	}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	body, err = normalizeChatGPTPlanBody(body)
+	if err != nil {
+		return nil, err
+	}
+	token, err := t.tokens.AccessToken(req.Context())
+	if err != nil {
+		return nil, err
+	}
+	clone := req.Clone(req.Context())
+	clone.Body = io.NopCloser(bytes.NewReader(body))
+	clone.ContentLength = int64(len(body))
+	clone.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
+	clone.Header = req.Header.Clone()
+	clone.Header.Set("Authorization", "Bearer "+token)
+	resp, err := t.base.RoundTrip(clone)
+	if err != nil || resp.StatusCode != http.StatusUnauthorized {
+		return resp, err
+	}
+	// One bounded refresh-and-retry handles an access token revoked just after
+	// it was read. Preserve the first body only long enough to close it.
+	io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+	resp.Body.Close()
+	t.tokens.InvalidateAccessToken(token)
+	token, err = t.tokens.AccessToken(req.Context())
+	if err != nil {
+		return nil, err
+	}
+	retry := req.Clone(req.Context())
+	retry.Body = io.NopCloser(bytes.NewReader(body))
+	retry.ContentLength = int64(len(body))
+	retry.GetBody = clone.GetBody
+	retry.Header = req.Header.Clone()
+	retry.Header.Set("Authorization", "Bearer "+token)
+	return t.base.RoundTrip(retry)
+}
+
+func normalizeChatGPTPlanBody(raw []byte) ([]byte, error) {
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &body); err != nil {
+		return nil, fmt.Errorf("chatgpt plan request: %w", err)
+	}
+	delete(body, "max_output_tokens")
+	delete(body, "temperature")
+	for _, unsupported := range []string{"background", "conversation", "max_tool_calls", "metadata", "moderation", "multi_agent", "prompt", "prompt_cache_retention", "safety_identifier", "top_logprobs", "top_p", "truncation", "user", "previous_response_id"} {
+		delete(body, unsupported)
+	}
+	body["stream"] = json.RawMessage("true")
+	body["store"] = json.RawMessage("false")
+	if tools, ok := body["tools"]; ok && len(tools) > 0 && string(tools) != "null" && string(tools) != "[]" {
+		var input []json.RawMessage
+		if rawInput := body["input"]; len(rawInput) > 0 {
+			if err := json.Unmarshal(rawInput, &input); err != nil {
+				return nil, fmt.Errorf("chatgpt plan input: %w", err)
+			}
+		}
+		additional, err := json.Marshal(struct {
+			Type  string          `json:"type"`
+			Role  string          `json:"role"`
+			Tools json.RawMessage `json:"tools"`
+		}{Type: "additional_tools", Role: "developer", Tools: tools})
+		if err != nil {
+			return nil, err
+		}
+		input = append([]json.RawMessage{additional}, input...)
+		body["input"], err = json.Marshal(input)
+		if err != nil {
+			return nil, err
+		}
+		delete(body, "tools")
+	}
+	return json.Marshal(body)
+}
+
+var openAINewTokenFieldModel = regexp.MustCompile(`(?i)^(?:o[134](?:[-.]|$)|gpt-(?:[5-9]|[1-9][0-9])(?:[-.]|$))`)
+
+// resolvedMaxTokensField keeps OpenAI-compatible gateways conservative while
+// making current official reasoning models work out of the box. Those models
+// reject max_tokens before inference starts and require max_completion_tokens.
+// A profile's explicit selection always wins.
+func resolvedMaxTokensField(c Config) string {
+	if c.MaxTokensField != "" || c.Format != llm.FormatOpenAI || !openAINewTokenFieldModel.MatchString(strings.TrimSpace(c.Model)) {
+		return c.MaxTokensField
+	}
+	base := strings.TrimSpace(c.BaseURL)
+	if base == "" { // the SDK's empty OpenAI base means https://api.openai.com/v1
+		return llm.MaxTokensFieldCompletion
+	}
+	u, err := url.Parse(base)
+	if err != nil || !strings.EqualFold(u.Scheme, "https") || !strings.EqualFold(u.Hostname(), "api.openai.com") {
+		return ""
+	}
+	if port := u.Port(); port != "" && port != "443" {
+		return ""
+	}
+	return llm.MaxTokensFieldCompletion
 }
 
 // IsQuotaExhaustedMessage deliberately recognizes only explicit balance,
