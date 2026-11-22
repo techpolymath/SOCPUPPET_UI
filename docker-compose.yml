@@ -53,6 +53,9 @@ services:
       SOCPUPPET_UI_LLM_PROXY: ${SOCPUPPET_UI_LLM_PROXY:-}
       # Exact host:port list the model-list fetch may reach on private addresses (e.g. host.docker.internal:11434 for Ollama).
       SOCPUPPET_UI_LLM_PRIVATE_ENDPOINTS: ${SOCPUPPET_UI_LLM_PRIVATE_ENDPOINTS:-}
+      # Project large agent tool catalogs for lower local-model prompt latency.
+      SOCPUPPET_UI_TOOL_RAG: ${SOCPUPPET_UI_TOOL_RAG:-}
+      SOCPUPPET_UI_TOOL_RAG_TOPK: ${SOCPUPPET_UI_TOOL_RAG_TOPK:-12}
       SOCPUPPET_UI_JWT_KEY_DIR: /app/keys
       # Optional: key for secrets at rest; empty = keys/secret.key (generated at first start).
       SOCPUPPET_UI_SECRET_KEY: ${SOCPUPPET_UI_SECRET_KEY:-}

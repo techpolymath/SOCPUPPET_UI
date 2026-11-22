@@ -33,6 +33,26 @@ func ragCatalog(n int) []actool.CoreTool {
 	return tools
 }
 
+func TestChatSuppliesMessageAsToolRAGQuery(t *testing.T) {
+	previous := ToolAugment()
+	t.Cleanup(func() { SetToolAugment(previous) })
+
+	const message = "scan the target web service"
+	var got string
+	SetToolAugment(func(ctx context.Context, _ string) ([]actool.CoreTool, DeferredInfo, func()) {
+		got, _ = ctx.Value(toolQueryKey{}).(string)
+		return nil, DeferredInfo{}, nil
+	})
+
+	chat := NewChatAgent(&sessionProbe{}, "test-model", t.TempDir(), nil, 0)
+	if _, err := chat.Chat(t.Context(), "assistant", "conv-tool-rag-query", message, 1, 0, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got != message {
+		t.Fatalf("Tool RAG query = %q, want %q", got, message)
+	}
+}
+
 func ragNames(tools []actool.CoreTool) (out []string) {
 	for _, t := range tools {
 		out = append(out, t.Name())

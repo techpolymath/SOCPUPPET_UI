@@ -161,6 +161,10 @@ func (c *ChatAgent) Chat(ctx context.Context, agentKey, sessionID, message strin
 	// have no tools-table rows, so they always pass through.
 	base := defaultTools(c.workDir) // file tools confined to sessionWorkDir (filetools.go)
 	ctx = WithRunInfo(ctx, RunInfo{SessionID: sessionID})
+	// Interactive chat has no goal/intent object, so use the current human
+	// message as Tool RAG's retrieval query. Without this, an enabled Tool RAG
+	// sees an empty query and falls back to the full catalog on every chat turn.
+	ctx = WithToolQuery(ctx, message)
 	tools, def, cleanup := AugmentTools(ctx, agentKey, base)
 	defer cleanup()
 
