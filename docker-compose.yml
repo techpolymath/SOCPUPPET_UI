@@ -24,7 +24,7 @@ services:
       context: .
       args:
         SOCPUPPET_UI_VERSION: ${SOCPUPPET_UI_VERSION:-dev}
-    image: socpuppet:local
+    image: socpuppet_ui:local
     # Agent processes run as an unprivileged executor (-exec-uid): no setuid program
     # or file capability may raise them back to root.
     security_opt:
@@ -33,7 +33,15 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SOCPUPPET_UI_PG_DSN: postgres://${POSTGRES_USER:-socpuppet_ui}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-socpuppet_ui}?sslmode=disable
+      # Parts, not a pasted URL. PostgresDSN percent-encodes the password, so a
+      # value with / ? % @ : or a space still connects. SOCPUPPET_UI_PG_DSN, when set,
+      # would override these and is responsible for its own escaping.
+      SOCPUPPET_UI_PG_HOST: postgres
+      SOCPUPPET_UI_PG_PORT: "5432"
+      SOCPUPPET_UI_PG_USER: ${POSTGRES_USER:-socpuppet_ui}
+      SOCPUPPET_UI_PG_PASSWORD: ${POSTGRES_PASSWORD:?Please set POSTGRES_PASSWORD in .env}
+      SOCPUPPET_UI_PG_DBNAME: ${POSTGRES_DB:-socpuppet_ui}
+      SOCPUPPET_UI_PG_SSLMODE: disable
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       SOCPUPPET_UI_LLM_PROVIDER: ${SOCPUPPET_UI_LLM_PROVIDER:-}

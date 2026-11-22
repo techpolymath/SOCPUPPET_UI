@@ -50,10 +50,11 @@ func TestSealedEnvironmentHandoff(t *testing.T) {
 		return
 	}
 	want := map[string]string{
-		"SOCPUPPET_UI_PG_DSN":     "postgres://socpuppet_ui:p@ss@db.internal/socpuppet_ui?sslmode=disable\nsecond line\twith tab",
-		"SOCPUPPET_UI_SECRET_KEY": "",
-		"ANTHROPIC_API_KEY":       "sk-ant-test",
-		"OPENAI_API_KEY":          "=leading-equals",
+		"SOCPUPPET_UI_PG_DSN":      "postgres://socpuppet_ui:p@ss@db.internal/socpuppet_ui?sslmode=disable\nsecond line\twith tab",
+		"SOCPUPPET_UI_PG_PASSWORD": "p/ss w@rd?#%",
+		"SOCPUPPET_UI_SECRET_KEY":  "",
+		"ANTHROPIC_API_KEY":        "sk-ant-test",
+		"OPENAI_API_KEY":           "=leading-equals",
 		// Proxy and endpoint URLs can carry credentials in their userinfo.
 		"SOCPUPPET_UI_LLM_PROXY":                    "http://proxyuser:proxypass@proxy.internal:3128",
 		"SOCPUPPET_UI_LLM_BASE_URL":                 "https://apiuser:apipass@llm.internal/v1",

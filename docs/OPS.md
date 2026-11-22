@@ -32,7 +32,7 @@ boundary and trusted proxies. No password or token value is ever logged there.
 | Setting | Resolution order | Code |
 | --- | --- | --- |
 | Config file | `SOCPUPPET_UI_CONFIG` → `./config.json` → `config.json` next to the binary | `config.Path` |
-| PostgreSQL DSN | `SOCPUPPET_UI_PG_DSN` → `database.dsn` → assembled `host/port/user/password/dbname` | `config.PostgresDSN` |
+| PostgreSQL DSN | `SOCPUPPET_UI_PG_DSN` → `SOCPUPPET_UI_PG_HOST` / `SOCPUPPET_UI_PG_PORT` / `SOCPUPPET_UI_PG_USER` / `SOCPUPPET_UI_PG_PASSWORD` / `SOCPUPPET_UI_PG_DBNAME` / `SOCPUPPET_UI_PG_SSLMODE` → `database.dsn` → assembled `host/port/user/password/dbname` | `config.PostgresDSN` |
 | Skill directory | `SOCPUPPET_UI_SKILL_DIR` → `skill_dir` → `<binary dir>/skills` | `config.SkillDir` |
 | JWT / secret key directory | `SOCPUPPET_UI_JWT_KEY_DIR` → `<binary dir>` (never the browsable data dir) | `config.KeyDir` |
 | Secret encryption key | `SOCPUPPET_UI_SECRET_KEY` → `<key dir>/secret.key` → newly generated key file | `db.InitSecrets` |
