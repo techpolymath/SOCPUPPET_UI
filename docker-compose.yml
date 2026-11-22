@@ -32,6 +32,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    extra_hosts:
+      # Reach the host-only Ollama listener without exposing it to the LAN.
+      - "host.docker.internal:host-gateway"
     environment:
       # Parts, not a pasted URL. PostgresDSN percent-encodes the password, so a
       # value with / ? % @ : or a space still connects. SOCPUPPET_UI_PG_DSN, when set,
