@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 func makeSockaddrInBytes(family uint16, port uint16, ip [4]byte) []byte {
@@ -124,7 +124,7 @@ func TestTransparentTCPFlagOffAndIPv6BindRejected(t *testing.T) {
 	t.Setenv(TransparentTCPEnabledEnv, "0")
 	t.Setenv(TransparentTCPAddrEnv, "127.0.0.1:1081")
 	if _, ok := TransparentTCPConfigFromEnv(); ok {
-		t.Fatal("explicit ARTEX_TRANSPARENT_TCP_ENABLED=0 must stay disabled even when addr is set")
+		t.Fatal("explicit SOCPUPPET_UI_TRANSPARENT_TCP_ENABLED=0 must stay disabled even when addr is set")
 	}
 
 	t.Setenv(TransparentTCPEnabledEnv, "1")

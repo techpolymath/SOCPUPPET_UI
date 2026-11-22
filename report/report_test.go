@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // The exported report carries the coverage gaps and the completeness caveat;
@@ -191,7 +191,7 @@ func TestStaleReportWarningOnBothSurfaces(t *testing.T) {
 // A cut inside an open fence would swallow the truncation marker and every later
 // section (other findings included) into the stale code block. The cap has to land
 // on a balanced fence. Third party report on the same defect:
-// TestMarkdownDetailedReportFenceBalance in ChaosLabsInc/ARTEX.
+// TestMarkdownDetailedReportFenceBalance in ChaosLabsInc/SOCPUPPET_UI.
 func TestMarkdownDetailedReportFenceBalance(t *testing.T) {
 	// An unclosed ```http fence that opens well before the 8 KiB cap and is still
 	// open where the body gets cut.

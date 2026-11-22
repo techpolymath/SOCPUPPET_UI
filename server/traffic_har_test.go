@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
 )
 
 func TestTrafficHAREndpointsRoundTripFilterAndErrors(t *testing.T) {
@@ -125,7 +125,7 @@ func TestTrafficHAREndpointsRoundTripFilterAndErrors(t *testing.T) {
 	if ct := wExp.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
 		t.Fatalf("export Content-Type = %q, want application/json", ct)
 	}
-	if wExp.Header().Get("X-ARTEX-HAR-Truncated") != "false" || wExp.Header().Get("X-ARTEX-HAR-Exported") != "1" || wExp.Header().Get("X-ARTEX-HAR-Matched") != "1" {
+	if wExp.Header().Get("X-SOCPUPPET_UI-HAR-Truncated") != "false" || wExp.Header().Get("X-SOCPUPPET_UI-HAR-Exported") != "1" || wExp.Header().Get("X-SOCPUPPET_UI-HAR-Matched") != "1" {
 		t.Fatalf("unexpected export headers: %+v", wExp.Header())
 	}
 	var exported traffic.HAR
@@ -240,7 +240,7 @@ func TestTrafficHARExportNearCapReimportsThroughHTTPHandler(t *testing.T) {
 	if wExp.Code != http.StatusOK {
 		t.Fatalf("export status=%d", wExp.Code)
 	}
-	if wExp.Header().Get("X-ARTEX-HAR-Truncated") != "false" {
+	if wExp.Header().Get("X-SOCPUPPET_UI-HAR-Truncated") != "false" {
 		t.Fatalf("expected non-truncated export, headers=%+v", wExp.Header())
 	}
 	if wExp.Body.Len() >= decodeMaxBytes {

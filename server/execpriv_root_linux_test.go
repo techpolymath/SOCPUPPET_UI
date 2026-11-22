@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
 )
 
 // Root tests of the three executor paths: the Bash tool through the PATH shim, a
@@ -51,7 +51,7 @@ func newExecRootFixture(t *testing.T) *execRootFixture {
 	// directory of the test is its own, world-writable and sticky like /tmp, so the
 	// host's <temp>/norma is never read or written. It cannot be t.TempDir(): the
 	// executor has to traverse it to reach the data directory below.
-	tmp, err := os.MkdirTemp("", "artex-exec-tmp-")
+	tmp, err := os.MkdirTemp("", "socpuppet_ui-exec-tmp-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func newExecRootFixture(t *testing.T) *execRootFixture {
 	}
 	t.Setenv("TMPDIR", tmp)
 	// A data directory like /app/data: root-owned and traversable.
-	dataDir, err := os.MkdirTemp("", "artex-exec-root-")
+	dataDir, err := os.MkdirTemp("", "socpuppet_ui-exec-root-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ attempt("chmod", lambda: os.chmod(d, 0o777))
 	}
 }
 
-// An MCP stdio command is started as `<server> __artex-exec-drop uid gid -- cmd`;
+// An MCP stdio command is started as `<server> __socpuppet_ui-exec-drop uid gid -- cmd`;
 // mcp.NewStdioClient runs it with exec.Command and the server environment.
 func TestExecutorMCPStdioAsRoot(t *testing.T) {
 	f := newExecRootFixture(t)

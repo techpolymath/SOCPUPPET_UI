@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 var (
@@ -22,11 +22,11 @@ var (
 
 func ensureTestSecrets(t *testing.T, d *db.DB) {
 	t.Helper()
-	if os.Getenv("ARTEX_SECRET_KEY") == "" {
-		t.Setenv("ARTEX_SECRET_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	if os.Getenv("SOCPUPPET_UI_SECRET_KEY") == "" {
+		t.Setenv("SOCPUPPET_UI_SECRET_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
 	}
 	testSecretsOnce.Do(func() {
-		dir := filepath.Join(os.TempDir(), "artex-agent-test-secrets")
+		dir := filepath.Join(os.TempDir(), "socpuppet_ui-agent-test-secrets")
 		_ = os.MkdirAll(dir, 0o700)
 		testSecretsDir = dir
 	})

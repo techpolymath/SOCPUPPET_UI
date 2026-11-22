@@ -6,7 +6,5 @@ export type TVars = Record<string, string | number>;
 
 export function t(key: string, vars?: TVars): string {
   if (!vars) return key;
-  return key.replace(/\{(\w+)\}/g, (m, name: string) =>
-    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : m,
-  );
+  return key.replace(/\{(\w+)\}/g, (m, name: string) => (Object.hasOwn(vars, name) ? String(vars[name]) : m));
 }

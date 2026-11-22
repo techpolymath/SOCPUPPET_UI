@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/notify"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/notify"
 )
 
 // This file is the HTTP API for the notification delivery feature. All routes are
@@ -476,7 +476,7 @@ func notifyTestMessage(baseURL string) notify.Message {
 			VulnClass: "Connectivity test",
 			Severity:  "low",
 			Summary:   "This is a test message for a SOCPuppet notification channel; receiving it means the channel is configured correctly.",
-			Assets:    []string{"artex.example.com"},
+			Assets:    []string{"socpuppet_ui.example.com"},
 			DetailURL: baseURL,
 		}},
 		HomeURL: baseURL,

@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/llmrec"
 	"github.com/Autumn-27/norma/llm"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/llmrec"
 )
 
 type captureReqProvider struct {
@@ -228,7 +228,7 @@ func TestWorkerExecuteCachePrefixEndToEnd(t *testing.T) {
 			req1On.DynamicBoundary, len(req1On.System), req2On.DynamicBoundary, len(req2On.System))
 	}
 	if req1On.System[2] != req1Off.System[2] || req2On.System[2] != req2Off.System[2] {
-		t.Fatalf("norma untrusted-output note segment changed under ARTEX_CACHE_PREFIX=1")
+		t.Fatalf("norma untrusted-output note segment changed under SOCPUPPET_UI_CACHE_PREFIX=1")
 	}
 	if req1On.System[0] != req2On.System[0] {
 		t.Fatalf("flag on static prefix differs between sibling workers")
@@ -270,10 +270,10 @@ func TestWorkerExecuteCachePrefixEndToEnd(t *testing.T) {
 	}
 
 	if strings.Join(req1On.System, "\n\n") != strings.Join(req1Off.System, "\n\n") {
-		t.Fatalf("worker 1 visible prompt changed under ARTEX_CACHE_PREFIX=1")
+		t.Fatalf("worker 1 visible prompt changed under SOCPUPPET_UI_CACHE_PREFIX=1")
 	}
 	if strings.Join(req2On.System, "\n\n") != strings.Join(req2Off.System, "\n\n") {
-		t.Fatalf("worker 2 visible prompt changed under ARTEX_CACHE_PREFIX=1")
+		t.Fatalf("worker 2 visible prompt changed under SOCPUPPET_UI_CACHE_PREFIX=1")
 	}
 
 	// With RSI lessons enabled (framed with a per-run random nonce), lessons stay in
@@ -291,7 +291,7 @@ func TestWorkerExecuteCachePrefixEndToEnd(t *testing.T) {
 	toolsOffJSON, _ := json.Marshal(req1Off.Tools)
 	toolsOnJSON, _ := json.Marshal(req1On.Tools)
 	if string(toolsOnJSON) != string(toolsOffJSON) {
-		t.Fatalf("tools changed under ARTEX_CACHE_PREFIX=1")
+		t.Fatalf("tools changed under SOCPUPPET_UI_CACHE_PREFIX=1")
 	}
 
 	// Telemetry observes non-zero static & dynamic split with identical static bytes.
@@ -302,7 +302,7 @@ func TestWorkerExecuteCachePrefixEndToEnd(t *testing.T) {
 			m1.SystemStaticBytes, m1.SystemDynamicBytes, m2.SystemStaticBytes, m2.SystemDynamicBytes)
 	}
 
-	// 3. Planner and mainagent are completely unchanged by ARTEX_CACHE_PREFIX=1.
+	// 3. Planner and mainagent are completely unchanged by SOCPUPPET_UI_CACHE_PREFIX=1.
 	runPlanner := func() llm.CompletionRequest {
 		prov := &captureReqProvider{}
 		if _, _, err := NewPlanner(prov, "test-model", workDir, nil, 0, 2).Plan(t.Context(), task.ID, as, ts, "goal", nil, passHooks{}, nil); err != nil {
@@ -326,11 +326,11 @@ func TestWorkerExecuteCachePrefixEndToEnd(t *testing.T) {
 	mainOn := runMain()
 
 	if planOn.DynamicBoundary != planOff.DynamicBoundary || !slices.Equal(planOn.System, planOff.System) {
-		t.Fatalf("planner changed under ARTEX_CACHE_PREFIX=1: off=(%d,len=%d) on=(%d,len=%d)",
+		t.Fatalf("planner changed under SOCPUPPET_UI_CACHE_PREFIX=1: off=(%d,len=%d) on=(%d,len=%d)",
 			planOff.DynamicBoundary, len(planOff.System), planOn.DynamicBoundary, len(planOn.System))
 	}
 	if mainOn.DynamicBoundary != mainOff.DynamicBoundary || !slices.Equal(mainOn.System, mainOff.System) {
-		t.Fatalf("mainagent changed under ARTEX_CACHE_PREFIX=1: off=(%d,len=%d) on=(%d,len=%d)",
+		t.Fatalf("mainagent changed under SOCPUPPET_UI_CACHE_PREFIX=1: off=(%d,len=%d) on=(%d,len=%d)",
 			mainOff.DynamicBoundary, len(mainOff.System), mainOn.DynamicBoundary, len(mainOn.System))
 	}
 }

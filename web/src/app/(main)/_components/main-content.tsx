@@ -34,14 +34,14 @@ function isFullBleed(pathname: string) {
   return normalized.startsWith("/function/tasks/");
 }
 
-const RELEASES_URL = "https://github.com/BaaRai/ARTEX/releases";
-const UPDATE_DISMISSED_KEY = "artex-update-dismissed";
+const RELEASES_URL = "https://github.com/techpolymath/SOCPUPPET_UI/releases";
+const UPDATE_DISMISSED_KEY = "socpuppet_ui-update-dismissed";
 
 export function MainContent({ children }: { children: ReactNode }) {
   const currentUser = useCurrentUser();
   const pathname = usePathname();
   const [version, setVersion] = useState("");
-  // Only set when the backend has the opt-in update check on (ARTEX_UPDATE_CHECK) and found a newer release.
+  // Only set when the backend has the opt-in update check on (SOCPUPPET_UI_UPDATE_CHECK) and found a newer release.
   const [latest, setLatest] = useState("");
 
   useEffect(() => {

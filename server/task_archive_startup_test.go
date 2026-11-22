@@ -30,17 +30,17 @@ func TestArchiveStoreLoadsCredentialsBeforeSecretScrub(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer endpoint.Close()
-	t.Setenv("ARTEX_ARCHIVE_STORAGE", "s3")
-	t.Setenv("ARTEX_ARCHIVE_S3_ENDPOINT", endpoint.URL)
-	t.Setenv("ARTEX_ARCHIVE_S3_REGION", "us-east-1")
-	t.Setenv("ARTEX_ARCHIVE_S3_BUCKET", "fixture")
-	t.Setenv("ARTEX_ARCHIVE_S3_PREFIX", "archives")
-	t.Setenv("ARTEX_ARCHIVE_S3_PATH_STYLE", "true")
-	t.Setenv("ARTEX_ARCHIVE_S3_ACCESS_KEY_ID", "archive-fixture-key")
-	t.Setenv("ARTEX_ARCHIVE_S3_SECRET_ACCESS_KEY", "archive-fixture-secret")
-	t.Setenv("ARTEX_ARCHIVE_S3_SESSION_TOKEN", "archive-fixture-session")
-	t.Setenv("ARTEX_ARCHIVE_S3_SSE", "AES256")
-	t.Setenv("ARTEX_ARCHIVE_S3_KMS_KEY_ID", "")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_STORAGE", "s3")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_ENDPOINT", endpoint.URL)
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_REGION", "us-east-1")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_BUCKET", "fixture")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_PREFIX", "archives")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_PATH_STYLE", "true")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_ACCESS_KEY_ID", "archive-fixture-key")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_SECRET_ACCESS_KEY", "archive-fixture-secret")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_SESSION_TOKEN", "archive-fixture-session")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_SSE", "AES256")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_KMS_KEY_ID", "")
 	// If initialization happens after the scrub, the SDK would silently select
 	// this different ambient identity instead of the dedicated override.
 	t.Setenv("AWS_ACCESS_KEY_ID", "ambient-fixture-key")
@@ -64,7 +64,7 @@ func TestArchiveStoreLoadsCredentialsBeforeSecretScrub(t *testing.T) {
 	if s.archiveStoreErr != nil || s.archiveStore == nil {
 		t.Fatalf("S3 initialization failed: %v", s.archiveStoreErr)
 	}
-	for _, key := range []string{"ARTEX_ARCHIVE_S3_ACCESS_KEY_ID", "ARTEX_ARCHIVE_S3_SECRET_ACCESS_KEY", "ARTEX_ARCHIVE_S3_SESSION_TOKEN"} {
+	for _, key := range []string{"SOCPUPPET_UI_ARCHIVE_S3_ACCESS_KEY_ID", "SOCPUPPET_UI_ARCHIVE_S3_SECRET_ACCESS_KEY", "SOCPUPPET_UI_ARCHIVE_S3_SESSION_TOKEN"} {
 		if _, present := os.LookupEnv(key); present {
 			t.Fatalf("%s remains in the child-process environment", key)
 		}
@@ -80,7 +80,7 @@ func TestArchiveStoreLoadsCredentialsBeforeSecretScrub(t *testing.T) {
 }
 
 // The archive store may take its identity from the ambient AWS credential
-// variables instead of the ARTEX_ARCHIVE_S3_* override. Those variables are as
+// variables instead of the SOCPUPPET_UI_ARCHIVE_S3_* override. Those variables are as
 // sensitive as the override: after startup no child process may inherit them,
 // and the S3 client built before the scrub must keep signing with them.
 func TestReview318AmbientAWSCredentialsScrubbedAfterArchiveInit(t *testing.T) {
@@ -111,18 +111,18 @@ func TestReview318AmbientAWSCredentialsScrubbedAfterArchiveInit(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer endpoint.Close()
-	t.Setenv("ARTEX_ARCHIVE_STORAGE", "s3")
-	t.Setenv("ARTEX_ARCHIVE_S3_ENDPOINT", endpoint.URL)
-	t.Setenv("ARTEX_ARCHIVE_S3_REGION", "us-east-1")
-	t.Setenv("ARTEX_ARCHIVE_S3_BUCKET", "fixture")
-	t.Setenv("ARTEX_ARCHIVE_S3_PREFIX", "archives")
-	t.Setenv("ARTEX_ARCHIVE_S3_PATH_STYLE", "true")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_STORAGE", "s3")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_ENDPOINT", endpoint.URL)
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_REGION", "us-east-1")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_BUCKET", "fixture")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_PREFIX", "archives")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_PATH_STYLE", "true")
 	// No dedicated override: the SDK's default chain reads the AWS_* variables.
-	t.Setenv("ARTEX_ARCHIVE_S3_ACCESS_KEY_ID", "")
-	t.Setenv("ARTEX_ARCHIVE_S3_SECRET_ACCESS_KEY", "")
-	t.Setenv("ARTEX_ARCHIVE_S3_SESSION_TOKEN", "")
-	t.Setenv("ARTEX_ARCHIVE_S3_SSE", "AES256")
-	t.Setenv("ARTEX_ARCHIVE_S3_KMS_KEY_ID", "")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_ACCESS_KEY_ID", "")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_SECRET_ACCESS_KEY", "")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_SESSION_TOKEN", "")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_SSE", "AES256")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_KMS_KEY_ID", "")
 	t.Setenv("AWS_ACCESS_KEY_ID", "ambient-fixture-key")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "ambient-fixture-secret")
 	t.Setenv("AWS_SESSION_TOKEN", "ambient-fixture-session")

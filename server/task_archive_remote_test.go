@@ -16,15 +16,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Autumn-27/artex/archivestore"
-	pgdb "github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/archivestore"
+	pgdb "github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 func TestRemoteArchiveLifecycle(t *testing.T) {
-	if os.Getenv("ARTEX_PG_DSN") == "" {
+	if os.Getenv("SOCPUPPET_UI_PG_DSN") == "" {
 		t.Skip("requires isolated PostgreSQL")
 	}
-	t.Setenv("ARTEX_ARCHIVE_STORAGE", "local")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_STORAGE", "local")
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +257,7 @@ func TestRemoteArchiveLifecycle(t *testing.T) {
 // Once PostgreSQL has committed an archive location and checksum, a subsequent
 // queued operation must not make startup recovery resurrect the old workspace.
 func TestTaskArchiveStageRecoveryAfterCommit(t *testing.T) {
-	if os.Getenv("ARTEX_PG_DSN") == "" {
+	if os.Getenv("SOCPUPPET_UI_PG_DSN") == "" {
 		t.Skip("requires isolated PostgreSQL")
 	}
 	m, err := NewManager(t.TempDir(), "")
@@ -348,7 +348,7 @@ func TestTaskArchiveStageRecoveryAfterCommit(t *testing.T) {
 // Failed remote cleanup can survive switching to local storage and retrying the
 // same archive ID. Its journal must never remove the newly committed local copy.
 func TestRemoteArchiveJournalPreservesLocalRetry(t *testing.T) {
-	if os.Getenv("ARTEX_PG_DSN") == "" {
+	if os.Getenv("SOCPUPPET_UI_PG_DSN") == "" {
 		t.Skip("requires isolated PostgreSQL")
 	}
 	m, err := NewManager(t.TempDir(), "")

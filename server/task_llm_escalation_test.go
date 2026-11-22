@@ -6,8 +6,8 @@ import (
 	"iter"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 type failingProvider struct{ err error }

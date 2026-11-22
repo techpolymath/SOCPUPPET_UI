@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 // Intercept rules run before the judge: a call a rule covers never reaches the

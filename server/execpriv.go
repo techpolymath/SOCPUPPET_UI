@@ -15,7 +15,7 @@ import (
 // the config file and /proc/<server-pid>/environ with root's rights.
 //
 // The drop is applied to the child, never to the server: SysProcAttr.Credential for
-// the processes ARTEX starts itself, and for the processes the Norma library starts
+// the processes SOCPUPPET_UI starts itself, and for the processes the Norma library starts
 // (Bash, shell, MCP stdio) a shim in the same binary that drops and then execs the
 // real program. See execpriv_unix.go.
 
@@ -27,8 +27,8 @@ const (
 )
 
 // execDropArg is the argv marker of the MCP drop shim:
-// artex __artex-exec-drop <uid> <gid> -- <command> <args...>.
-const execDropArg = "__artex-exec-drop"
+// socpuppet_ui __socpuppet_ui-exec-drop <uid> <gid> -- <command> <args...>.
+const execDropArg = "__socpuppet_ui-exec-drop"
 
 // ExecPrivilege is the identity agent processes run under. The zero value is
 // disabled: children keep the server's identity, which is the state before this

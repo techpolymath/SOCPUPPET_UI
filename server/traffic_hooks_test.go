@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
 )
 
 func TestTamperHooksAPIValidationKillSwitchCRUDVersionsRollbackDryRun(t *testing.T) {
@@ -104,7 +104,7 @@ func OnRequest(req *Request) error {
 		t.Fatalf("toggle HTTP %d: %v", code, toggled)
 	}
 	if m.traffic.TamperHooks() != nil {
-		t.Fatal("expected nil TamperHooks on proxy when ARTEX_TAMPER_HOOKS_ENABLED is off")
+		t.Fatal("expected nil TamperHooks on proxy when SOCPUPPET_UI_TAMPER_HOOKS_ENABLED is off")
 	}
 
 	// 4. Enable kill switch and reload: snapshot now holds 1 request hook.

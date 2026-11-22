@@ -1,4 +1,4 @@
-// ARTEX domain model — types used across the UI.
+// SOCPUPPET_UI domain model — types used across the UI.
 // Derived from the functional spec (section 7: key data shapes).
 
 export type TaskStatus = "created" | "queued" | "running" | "paused" | "done" | "failed" | "timeout";
@@ -1058,7 +1058,7 @@ export interface Settings {
   // Render limits of IM messages; 0 = no truncation. The backend answers 400 outside the bounds.
   notify_summary_max_runes?: number; // summary characters per finding, 0-4000, default 120
   notify_assets_max_shown?: number; // asset names listed per finding, 0-50, default 3
-  // Target noise profile; the stored setting wins over ARTEX_NOISE_PROFILE. Applies to the next request.
+  // Target noise profile; the stored setting wins over SOCPUPPET_UI_NOISE_PROFILE. Applies to the next request.
   noise_profile?: NoiseProfileName;
 }
 
@@ -1199,6 +1199,11 @@ export interface ChatGPTConnectionStatus {
   email?: string;
   expires_at?: string;
   manage_url?: string;
+}
+
+export interface ChatGPTModelOption {
+  slug: string;
+  display_name: string;
 }
 
 // ---- LLM retry policy ----
@@ -1458,7 +1463,6 @@ export type TaskCredential = TaskCredentialInput & {
   created_at: string;
   updated_at: string;
 };
-
 
 export interface AssetInterceptRule {
   id: number;

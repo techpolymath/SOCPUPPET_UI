@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
 )
 
-const transparentRedirectChildEnv = "ARTEX_TRANSPARENT_REDIRECT_CHILD"
+const transparentRedirectChildEnv = "SOCPUPPET_UI_TRANSPARENT_REDIRECT_CHILD"
 
 // TestTransparentTCPLinuxRealIptablesRedirect exercises real Linux kernel
 // iptables REDIRECT + getsockopt(SOL_IP, SO_ORIGINAL_DST) inside an isolated
@@ -99,7 +99,7 @@ func TestTransparentTCPLinuxRealIptablesRedirect(t *testing.T) {
 	}()
 
 	// Redirect ONLY packets sourced from 127.0.0.3 destined to 127.0.0.2:<echoPort>
-	// into the transparent listener on <transPort>. ARTEX's own outbound dial uses
+	// into the transparent listener on <transPort>. SOCPUPPET_UI's own outbound dial uses
 	// default loopback source 127.0.0.1 and therefore bypasses REDIRECT cleanly.
 	iptArgs := []string{
 		"-t", "nat", "-A", "OUTPUT",

@@ -1,4 +1,4 @@
-// Command artex runs the SOCPuppet backend: the dual PostgreSQL graph stores,
+// Command socpuppet_ui runs the SOCPuppet backend: the dual PostgreSQL graph stores,
 // the event-driven exploration engine, and the JSON HTTP API consumed by the
 // shadcn/ui frontend.
 package main
@@ -17,10 +17,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/config"
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/server"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
+	"github.com/techpolymath/SOCPUPPET_UI/config"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/server"
 )
 
 // configSnapshot is the single startup log line describing the effective
@@ -140,9 +140,9 @@ func run() int {
 	// JWT signing key directory (also holds secret.key, see server.NewManager).
 	keyDir := config.KeyDir()
 	// Proxies whose X-Forwarded-For the login rate limit reads; empty trusts none.
-	trusted, err := server.ParseTrustedProxies(os.Getenv("ARTEX_TRUSTED_PROXIES"))
+	trusted, err := server.ParseTrustedProxies(os.Getenv("SOCPUPPET_UI_TRUSTED_PROXIES"))
 	if err != nil {
-		log.Printf("[config] ARTEX_TRUSTED_PROXIES: %v", err)
+		log.Printf("[config] SOCPUPPET_UI_TRUSTED_PROXIES: %v", err)
 		return 1
 	}
 	trustedAddrs := make([]string, 0, len(trusted))

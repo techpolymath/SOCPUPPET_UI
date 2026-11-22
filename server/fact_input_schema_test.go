@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
 )
 
 func TestRecordFactInputSchemaUpgrade(t *testing.T) {

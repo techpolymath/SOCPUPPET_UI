@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // The declared forms of a call decide first: the URL block rules on the URLs

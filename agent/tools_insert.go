@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // assetInterceptCandidates extracts the domain/IP/URL candidate strings of an

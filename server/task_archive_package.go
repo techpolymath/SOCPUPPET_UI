@@ -15,9 +15,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/agent"
-	pgdb "github.com/Autumn-27/artex/db"
 	"github.com/klauspost/compress/zstd"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
+	pgdb "github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 const (

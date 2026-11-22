@@ -109,7 +109,7 @@ export const CHANNEL_FIELDS: Record<string, FieldDef[]> = {
     },
     { key: "username", label: t("Account"), kind: "text" },
     { key: "password", label: t("Password / auth code"), kind: "password" },
-    { key: "from", label: t("From"), kind: "text", placeholder: "artex@example.com" },
+    { key: "from", label: t("From"), kind: "text", placeholder: "socpuppet_ui@example.com" },
     { key: "to", label: t("Recipients"), kind: "list", help: t("Separate multiple addresses with commas") },
     { key: "tls", label: t("Implicit TLS"), kind: "switch", help: t("On for port 465; keep off for 587 (STARTTLS is automatic)") },
   ],

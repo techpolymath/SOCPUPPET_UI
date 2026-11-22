@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
 	"github.com/google/uuid"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 type completeProvider struct{}
@@ -151,12 +151,12 @@ func (meteredStreamProvider) Stream(context.Context, llm.CompletionRequest) iter
 }
 
 func TestSideUsageRecordedOnceOnConsumerCancellation(t *testing.T) {
-	// Previously skipped as timing-sensitive (BaaRai/ARTEX#9). The recorder now
+	// Previously skipped as timing-sensitive (techpolymath/SOCPUPPET_UI#9). The recorder now
 	// decides the status at the point the consumer stops, so the result no
 	// longer depends on when the deferred finish runs.
-	dsn := os.Getenv("ARTEX_PG_DSN")
+	dsn := os.Getenv("SOCPUPPET_UI_PG_DSN")
 	if dsn == "" {
-		t.Skip("requires isolated ARTEX_PG_DSN")
+		t.Skip("requires isolated SOCPUPPET_UI_PG_DSN")
 	}
 	pg, err := db.Open(dsn)
 	if err != nil {

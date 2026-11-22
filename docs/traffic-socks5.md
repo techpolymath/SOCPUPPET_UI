@@ -1,26 +1,26 @@
 # Opt-in SOCKS5 Inbound Proxy & Raw TCP Recording (P4.1a)
 
-ARTEX ships an opt-in **RFC 1928 SOCKS5 `CONNECT`** inbound listener in `traffic/` that records raw TCP connections separately from HTTP traffic.
+SOCPUPPET_UI ships an opt-in **RFC 1928 SOCKS5 `CONNECT`** inbound listener in `traffic/` that records raw TCP connections separately from HTTP traffic.
 
 ## Opt-in Configuration (Off by Default)
 
 | Environment Variable | Default | Behavior |
 |---|---|---|
-| `ARTEX_SOCKS5_ENABLED` | unset (off) | Set to `1` / `true` / `on` / `yes` to start the SOCKS5 listener on `127.0.0.1:1080` (loopback). Explicit `0` / `false` / `off` / `no` forces it off even if `ARTEX_SOCKS5_ADDR` is set. |
-| `ARTEX_SOCKS5_ADDR` | `127.0.0.1:1080` | Explicit TCP bind address; setting a non-empty value also enables the listener unless `ARTEX_SOCKS5_ENABLED` is explicitly false. |
+| `SOCPUPPET_UI_SOCKS5_ENABLED` | unset (off) | Set to `1` / `true` / `on` / `yes` to start the SOCKS5 listener on `127.0.0.1:1080` (loopback). Explicit `0` / `false` / `off` / `no` forces it off even if `SOCPUPPET_UI_SOCKS5_ADDR` is set. |
+| `SOCPUPPET_UI_SOCKS5_ADDR` | `127.0.0.1:1080` | Explicit TCP bind address; setting a non-empty value also enables the listener unless `SOCPUPPET_UI_SOCKS5_ENABLED` is explicitly false. |
 
 - **Flag off**: no SOCKS5 listener is started and the HTTP MITM recording proxy is byte-identical.
-- **Requires traffic recorder**: the server only starts the SOCKS5 listener when the traffic recorder is enabled (inside the traffic proxy block in `server/manager.go`). If traffic capture is disabled, setting `ARTEX_SOCKS5_ENABLED` / `ARTEX_SOCKS5_ADDR` does not open a listener.
-- **Agents unchanged**: workers and tools keep `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` pointing to the existing HTTP proxy; ARTEX does not silently switch agents to SOCKS5.
-- **Non-loopback bind warning**: RFC 1929 username/password (`0x02`) accepts **any** username and password without verifying credentials (so the pace marker `artex-pace` can ride in the username). Binding `ARTEX_SOCKS5_ADDR` to a non-loopback address therefore exposes an **unauthenticated proxy** to anyone who can reach that port. The target gate and egress governor still apply to every connection, but keep the listener on loopback (`127.0.0.1`) or restrict access at the host firewall.
+- **Requires traffic recorder**: the server only starts the SOCKS5 listener when the traffic recorder is enabled (inside the traffic proxy block in `server/manager.go`). If traffic capture is disabled, setting `SOCPUPPET_UI_SOCKS5_ENABLED` / `SOCPUPPET_UI_SOCKS5_ADDR` does not open a listener.
+- **Agents unchanged**: workers and tools keep `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` pointing to the existing HTTP proxy; SOCPUPPET_UI does not silently switch agents to SOCKS5.
+- **Non-loopback bind warning**: RFC 1929 username/password (`0x02`) accepts **any** username and password without verifying credentials (so the pace marker `socpuppet_ui-pace` can ride in the username). Binding `SOCPUPPET_UI_SOCKS5_ADDR` to a non-loopback address therefore exposes an **unauthenticated proxy** to anyone who can reach that port. The target gate and egress governor still apply to every connection, but keep the listener on loopback (`127.0.0.1`) or restrict access at the host firewall.
 
 ## Protocol Scope (P4.1a)
 
-- **Commands**: `CONNECT` (`0x01`) by default. `BIND` (`0x02`) and unknown commands return RFC 1928 reply `0x07` (*Command not supported*). `UDP ASSOCIATE` (`0x03`) also returns `0x07` unless `ARTEX_SOCKS5_UDP_ENABLED=1` is set (see [docs/traffic-socks5-udp.md](traffic-socks5-udp.md)).
+- **Commands**: `CONNECT` (`0x01`) by default. `BIND` (`0x02`) and unknown commands return RFC 1928 reply `0x07` (*Command not supported*). `UDP ASSOCIATE` (`0x03`) also returns `0x07` unless `SOCPUPPET_UI_SOCKS5_UDP_ENABLED=1` is set (see [docs/traffic-socks5-udp.md](traffic-socks5-udp.md)).
 - **Addressing**: IPv4 (`0x01`), domain name (`0x03`), and IPv6 (`0x04`). Unknown address types return `0x08` (*Address type not supported*).
 - **Authentication**:
   - Loopback peers (`net.IP.IsLoopback()`) may connect with **No Auth** (`0x00`). Non-loopback peers offering only `0x00` are rejected with `0x05 0xFF`.
-  - **Username/Password** (`0x02`, RFC 1929) is accepted without requiring credentials so clients can pass the pace marker (`artex-pace`, `egress.PaceUser`) in the username.
+  - **Username/Password** (`0x02`, RFC 1929) is accepted without requiring credentials so clients can pass the pace marker (`socpuppet_ui-pace`, `egress.PaceUser`) in the username.
 - **Relay**: Full-duplex, half-close aware (`CloseWrite` on EOF in each direction).
 
 ## Policy Enforcement Before Dialing

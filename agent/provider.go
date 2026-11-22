@@ -1,5 +1,5 @@
 // Package agent wires real LLM-driven planner and work agents (on top of the
-// agent-core SDK) to the dual PostgreSQL graph. See the ARTEX architecture design doc
+// agent-core SDK) to the dual PostgreSQL graph. See the SOCPUPPET_UI architecture design doc
 // §4.3 (planner) and §4.4 (work agent).
 //
 // Provider configuration is read from the environment so the system runs with
@@ -10,6 +10,7 @@
 package agent
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -23,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/llmrec"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/compaction"
 	"github.com/Autumn-27/norma/llm"
 	acperm "github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
 	"github.com/Autumn-27/norma/transcript"
+	"github.com/techpolymath/SOCPUPPET_UI/llmrec"
 )
 
 // Config describes the LLM backend resolved from the environment.
@@ -109,6 +110,7 @@ type Config struct {
 // tokens encrypted at rest; the provider never sees those credentials.
 type ChatGPTTokenSource interface {
 	AccessToken(context.Context) (string, error)
+	AccountID() string
 	InvalidateAccessToken(string)
 }
 
@@ -160,6 +162,10 @@ const FormatOllama llm.Format = "ollama"
 // chatgpt.tokens.use.direct scope charges inference to the signed-in ChatGPT
 // plan. It is deliberately distinct from API-key-backed openai-responses.
 const FormatChatGPT llm.Format = "chatgpt"
+
+// ChatGPTPlanBaseURL is the fixed backend used for direct ChatGPT-plan usage.
+// ChatGPT OAuth tokens must never be sent to a user-controlled base URL.
+const ChatGPTPlanBaseURL = "https://api.openai.com/v1"
 
 // DefaultOllamaBaseURL is the base of Ollama's OpenAI-compatible endpoint the
 // provider appends /chat/completions to. Must never end up empty: with an
@@ -238,15 +244,15 @@ func compactionConfig(windowTokens int) *compaction.Config {
 
 // FromEnv resolves the LLM provider config:
 //
-//	ARTEX_LLM_PROVIDER = anthropic|openai|openai-responses|ollama|chatgpt (default: inferred from keys)
-//	ARTEX_LLM_MODEL    = model id        (default: per provider)
-//	ARTEX_LLM_BASE_URL = endpoint        (optional; ollama defaults to localhost:11434/v1)
-//	ARTEX_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
+//	SOCPUPPET_UI_LLM_PROVIDER = anthropic|openai|openai-responses|ollama|chatgpt (default: inferred from keys)
+//	SOCPUPPET_UI_LLM_MODEL    = model id        (default: per provider)
+//	SOCPUPPET_UI_LLM_BASE_URL = endpoint        (optional; ollama defaults to localhost:11434/v1)
+//	SOCPUPPET_UI_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
 //	ANTHROPIC_API_KEY / OPENAI_API_KEY         = credentials (unused for ollama/chatgpt)
 func FromEnv() (Config, bool) {
 	// Case- and space-insensitive: "Ollama" used to miss every case below and
 	// fall through to anthropic, sending ANTHROPIC_API_KEY to the Ollama base URL.
-	prov := strings.ToLower(strings.TrimSpace(os.Getenv("ARTEX_LLM_PROVIDER")))
+	prov := strings.ToLower(strings.TrimSpace(os.Getenv("SOCPUPPET_UI_LLM_PROVIDER")))
 	anthKey := os.Getenv("ANTHROPIC_API_KEY")
 	oaiKey := os.Getenv("OPENAI_API_KEY")
 
@@ -262,12 +268,12 @@ func FromEnv() (Config, bool) {
 	}
 
 	c := Config{
-		BaseURL: os.Getenv("ARTEX_LLM_BASE_URL"),
-		Model:   os.Getenv("ARTEX_LLM_MODEL"),
-		Proxy:   strings.TrimSpace(os.Getenv("ARTEX_LLM_PROXY")),
-		// Streaming by default; ARTEX_LLM_STREAM=false/0/off explicitly switches to
+		BaseURL: os.Getenv("SOCPUPPET_UI_LLM_BASE_URL"),
+		Model:   os.Getenv("SOCPUPPET_UI_LLM_MODEL"),
+		Proxy:   strings.TrimSpace(os.Getenv("SOCPUPPET_UI_LLM_PROXY")),
+		// Streaming by default; SOCPUPPET_UI_LLM_STREAM=false/0/off explicitly switches to
 		// non-streaming.
-		Stream: !isFalsy(os.Getenv("ARTEX_LLM_STREAM")),
+		Stream: !isFalsy(os.Getenv("SOCPUPPET_UI_LLM_STREAM")),
 	}
 	switch prov {
 	case "openai":
@@ -351,9 +357,8 @@ func ConfigFrom(provider, model, baseURL, apiKey, proxy string) Config {
 		}
 	case "chatgpt":
 		c.Format = FormatChatGPT
-		// ChatGPT-plan OAuth is supported only on OpenAI's public Responses API.
 		// Ignore a pasted/custom endpoint so account tokens can never be sent to it.
-		c.BaseURL = "https://api.openai.com/v1"
+		c.BaseURL = ChatGPTPlanBaseURL
 		if c.Model == "" {
 			c.Model = "gpt-6.1-sol"
 		}
@@ -425,7 +430,7 @@ func (c Config) NewProvider() (llm.Provider, error) {
 			return nil, fmt.Errorf("chatgpt plan is not connected; sign in with ChatGPT first")
 		}
 		wireFormat = llm.FormatOpenAIResponses
-		baseURL = "https://api.openai.com/v1"
+		baseURL = ChatGPTPlanBaseURL
 		apiKey = "oauth-managed"
 		client = chatGPTPlanHTTPClient(client, c.ChatGPTTokenSource)
 	}
@@ -522,9 +527,15 @@ func (t *chatGPTPlanTransport) RoundTrip(req *http.Request) (*http.Response, err
 	clone.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 	clone.Header = req.Header.Clone()
 	clone.Header.Set("Authorization", "Bearer "+token)
+	if accountID := strings.TrimSpace(t.tokens.AccountID()); accountID != "" {
+		clone.Header.Set("ChatGPT-Account-Id", accountID)
+	}
 	resp, err := t.base.RoundTrip(clone)
-	if err != nil || resp.StatusCode != http.StatusUnauthorized {
+	if err != nil {
 		return resp, err
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		return validateChatGPTCyberProgram(resp, body)
 	}
 	// One bounded refresh-and-retry handles an access token revoked just after
 	// it was read. Preserve the first body only long enough to close it.
@@ -541,13 +552,121 @@ func (t *chatGPTPlanTransport) RoundTrip(req *http.Request) (*http.Response, err
 	retry.GetBody = clone.GetBody
 	retry.Header = req.Header.Clone()
 	retry.Header.Set("Authorization", "Bearer "+token)
-	return t.base.RoundTrip(retry)
+	if accountID := strings.TrimSpace(t.tokens.AccountID()); accountID != "" {
+		retry.Header.Set("ChatGPT-Account-Id", accountID)
+	}
+	resp, err = t.base.RoundTrip(retry)
+	if err != nil {
+		return resp, err
+	}
+	return validateChatGPTCyberProgram(resp, body)
+}
+
+type replayReadCloser struct {
+	io.Reader
+	io.Closer
+}
+
+// validateChatGPTCyberProgram rejects a silent downgrade before any model
+// output reaches the caller. A 200 response only proves inference worked; for
+// Daybreak, response.created must echo the requested access program. Continuing
+// under Standard would expose an authorized security task to avoidable safety
+// blocks and make the profile's Daybreak label misleading.
+func validateChatGPTCyberProgram(resp *http.Response, requestBody []byte) (*http.Response, error) {
+	if resp == nil || resp.Body == nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return resp, nil
+	}
+	var request struct {
+		AccessPrograms struct {
+			Cyber string `json:"cyber"`
+		} `json:"access_programs"`
+	}
+	if json.Unmarshal(requestBody, &request) != nil || request.AccessPrograms.Cyber == "" {
+		return resp, nil
+	}
+
+	reader := bufio.NewReader(resp.Body)
+	var prefix bytes.Buffer
+	const maxCreatedEvent = 64 << 10
+	for prefix.Len() < maxCreatedEvent {
+		line, readErr := reader.ReadString('\n')
+		prefix.WriteString(line)
+		data := strings.TrimSpace(line)
+		if strings.HasPrefix(data, "data:") {
+			data = strings.TrimSpace(strings.TrimPrefix(data, "data:"))
+			var event struct {
+				Type     string `json:"type"`
+				Response struct {
+					AccessPrograms *struct {
+						Cyber string `json:"cyber"`
+					} `json:"access_programs"`
+				} `json:"response"`
+			}
+			if json.Unmarshal([]byte(data), &event) == nil && event.Type == "response.created" {
+				actual := "standard"
+				if event.Response.AccessPrograms != nil && event.Response.AccessPrograms.Cyber != "" {
+					actual = event.Response.AccessPrograms.Cyber
+				}
+				if actual != request.AccessPrograms.Cyber {
+					resp.Body.Close()
+					message := fmt.Sprintf("chatgpt plan requested access_programs.cyber=%s, but OpenAI selected %s; Daybreak is not active for this OAuth workspace and model (reconnect using the approved workspace, or use an API key from an enabled Daybreak project)", request.AccessPrograms.Cyber, actual)
+					body, _ := json.Marshal(map[string]any{"error": map[string]string{
+						"message": message,
+						"type":    "daybreak_not_active",
+						"code":    "access_program_not_enabled",
+					}})
+					resp.StatusCode = http.StatusForbidden
+					resp.Status = "403 Forbidden"
+					resp.Header = make(http.Header)
+					resp.Header.Set("Content-Type", "application/json")
+					resp.ContentLength = int64(len(body))
+					resp.Body = io.NopCloser(bytes.NewReader(body))
+					return resp, nil
+				}
+				break
+			}
+		}
+		if readErr != nil {
+			break
+		}
+	}
+	resp.Body = &replayReadCloser{Reader: io.MultiReader(bytes.NewReader(prefix.Bytes()), reader), Closer: resp.Body}
+	return resp, nil
 }
 
 func normalizeChatGPTPlanBody(raw []byte) ([]byte, error) {
 	var body map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &body); err != nil {
 		return nil, fmt.Errorf("chatgpt plan request: %w", err)
+	}
+	// The ChatGPT model picker exposes Daybreak aliases. Selecting one is not
+	// enough by itself: the Responses API defaults a request with no explicit
+	// access_programs.cyber selection to standard safeguards. Attach the program
+	// encoded by the alias while leaving ordinary models untouched. This avoids
+	// forcing Daybreak onto accounts or models that do not support it.
+	if _, present := body["access_programs"]; !present {
+		var model string
+		_ = json.Unmarshal(body["model"], &model)
+		var cyber string
+		model = strings.ToLower(strings.TrimSpace(model))
+		switch {
+		case strings.Contains(strings.ToLower(model), "daybreak-blue"):
+			cyber = "daybreak_blue"
+		case strings.Contains(strings.ToLower(model), "daybreak-red"):
+			cyber = "daybreak_red"
+		case model == "gpt-6-sol", model == "gpt-6-luna":
+			// These are the exact model IDs OpenAI documents for Daybreak
+			// Blue access checks. The aliases exposed by a model-listing
+			// surface are not proof that Daybreak is active for a request.
+			cyber = "daybreak_blue"
+		}
+		if cyber != "" {
+			programs, err := json.Marshal(map[string]string{"cyber": cyber})
+			if err != nil {
+				return nil, err
+			}
+			body["access_programs"] = programs
+		}
 	}
 	delete(body, "max_output_tokens")
 	delete(body, "temperature")

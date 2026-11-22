@@ -11,12 +11,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
 	"github.com/Autumn-27/norma/harness"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 // isFKViolation reports whether err is a Postgres foreign-key violation (SQLSTATE
@@ -82,7 +82,22 @@ var errWorkControlConflict = errors.New("work control conflict")
 // A NOA budget refusal is deterministic and never reached the provider, so a
 // rerun would only fail the same way.
 func retryableWorkerModelError(reason harness.TerminalReason, err error) bool {
-	return reason == harness.ReasonModelError && !isTaskLLMRuntimeError(err) && !errors.Is(err, agent.ErrNoaBudget)
+	return reason == harness.ReasonModelError && !isTaskLLMRuntimeError(err) && !errors.Is(err, agent.ErrNoaBudget) && !isDeterministicModelRejection(err)
+}
+
+// isDeterministicModelRejection identifies provider decisions that cannot be
+// repaired by replaying the same prompt seconds later. Retrying these wastes
+// quota and leaves authorized security work stuck in repeated cooldowns.
+func isDeterministicModelRejection(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "flagged for possible cybersecurity risk") ||
+		strings.Contains(s, "daybreak is not active for this oauth workspace") ||
+		strings.Contains(s, "access_program_not_enabled") ||
+		strings.Contains(s, "invalid_access_program") ||
+		strings.Contains(s, "unsupported_access_program")
 }
 
 // Engine drives the event-driven exploration loop with real LLM agents

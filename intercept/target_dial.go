@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // The HTTP clients the platform owns (WebFetch and the custom http tool)

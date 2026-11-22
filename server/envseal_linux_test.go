@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-const sealHelperEnv = "ARTEX_SEAL_TEST_HELPER"
+const sealHelperEnv = "SOCPUPPET_UI_SEAL_TEST_HELPER"
 
 // sealHelper is the server's start sequence in miniature: seal, scrub, then report
 // what the kernel environment block and a child process see. It runs in the
@@ -50,16 +50,16 @@ func TestSealedEnvironmentHandoff(t *testing.T) {
 		return
 	}
 	want := map[string]string{
-		"ARTEX_PG_DSN":      "postgres://artex:p@ss@db.internal/artex?sslmode=disable\nsecond line\twith tab",
-		"ARTEX_SECRET_KEY":  "",
-		"ANTHROPIC_API_KEY": "sk-ant-test",
-		"OPENAI_API_KEY":    "=leading-equals",
+		"SOCPUPPET_UI_PG_DSN":     "postgres://socpuppet_ui:p@ss@db.internal/socpuppet_ui?sslmode=disable\nsecond line\twith tab",
+		"SOCPUPPET_UI_SECRET_KEY": "",
+		"ANTHROPIC_API_KEY":       "sk-ant-test",
+		"OPENAI_API_KEY":          "=leading-equals",
 		// Proxy and endpoint URLs can carry credentials in their userinfo.
-		"ARTEX_LLM_PROXY":                    "http://proxyuser:proxypass@proxy.internal:3128",
-		"ARTEX_LLM_BASE_URL":                 "https://apiuser:apipass@llm.internal/v1",
-		"ARTEX_ARCHIVE_S3_ACCESS_KEY_ID":     "AKIATESTONLY",
-		"ARTEX_ARCHIVE_S3_SECRET_ACCESS_KEY": "s3-secret-test",
-		"ARTEX_ARCHIVE_S3_SESSION_TOKEN":     "",
+		"SOCPUPPET_UI_LLM_PROXY":                    "http://proxyuser:proxypass@proxy.internal:3128",
+		"SOCPUPPET_UI_LLM_BASE_URL":                 "https://apiuser:apipass@llm.internal/v1",
+		"SOCPUPPET_UI_ARCHIVE_S3_ACCESS_KEY_ID":     "AKIATESTONLY",
+		"SOCPUPPET_UI_ARCHIVE_S3_SECRET_ACCESS_KEY": "s3-secret-test",
+		"SOCPUPPET_UI_ARCHIVE_S3_SESSION_TOKEN":     "",
 		// Ambient AWS credentials the archive store reads when it has no override.
 		"AWS_ACCESS_KEY_ID":                      "AKIAAMBIENTTEST",
 		"AWS_ACCESS_KEY":                         "AKIAALTERNATETEST",

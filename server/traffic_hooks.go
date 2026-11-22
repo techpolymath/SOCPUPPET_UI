@@ -11,14 +11,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
-	"github.com/Autumn-27/artex/traffic/rewrite"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 // --- capture-proxy constrained Go tampering hooks (P4.2) ---
 // Global configuration, operator/admin only, never exposed as an agent tool.
-// Execution is opt-in behind ARTEX_TAMPER_HOOKS_ENABLED=1 (off by default).
+// Execution is opt-in behind SOCPUPPET_UI_TAMPER_HOOKS_ENABLED=1 (off by default).
 
 type tamperHookReq struct {
 	Name     string           `json:"name"`
@@ -130,7 +130,7 @@ func (m *Manager) tamperHookDTO(row db.TrafficTamperHook) tamperHookDTO {
 }
 
 // reloadTamperHooks compiles enabled hooks into an immutable snapshot and swaps
-// it onto the capture proxy. When ARTEX_TAMPER_HOOKS_ENABLED is off (default),
+// it onto the capture proxy. When SOCPUPPET_UI_TAMPER_HOOKS_ENABLED is off (default),
 // zero hooks are loaded and the proxy receives nil (baseline fast path).
 func (m *Manager) reloadTamperHooks() {
 	m.hookMu.Lock()

@@ -1,4 +1,4 @@
-const TOKEN_KEY = "artex_token";
+const TOKEN_KEY = "socpuppet_ui_token";
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days (seconds)
 
 export interface CurrentUser {

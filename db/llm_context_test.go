@@ -178,7 +178,7 @@ func TestLLMContextMigration0009AndSummaryAggregation(t *testing.T) {
 	}
 }
 
-// TestLLMContextRepresentativeFixtureReport runs a realistic multi-turn ARTEX
+// TestLLMContextRepresentativeFixtureReport runs a realistic multi-turn SOCPUPPET_UI
 // task fixture (planner rounds + deep worker intent execution + main-agent
 // follow-up) through InsertLLMContext and LLMContextSummary, verifying the
 // aggregation pipeline end-to-end and logging reproducible Phase A numbers.
@@ -192,7 +192,7 @@ func TestLLMContextRepresentativeFixtureReport(t *testing.T) {
 	taskID := fmt.Sprintf("fixture-p35a-%d", time.Now().UnixNano())
 	t.Cleanup(func() { _, _ = d.Exec(`DELETE FROM llm_context WHERE task_id=$1`, taskID) })
 
-	// Representative byte sizes modeled from ARTEX's actual plannerSystem (~12 KiB),
+	// Representative byte sizes modeled from SOCPUPPET_UI's actual plannerSystem (~12 KiB),
 	// workerSystem (~11 KiB), tool schemas (~8-10 KiB for 12-16 tools), and real
 	// multi-turn exploration trajectories (token estimate ~3.8 bytes/token).
 	var fixture []LLMContext

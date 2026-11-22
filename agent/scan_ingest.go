@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // Deterministic ingestion of scanner output files (nmap -oX, nuclei -jsonl,

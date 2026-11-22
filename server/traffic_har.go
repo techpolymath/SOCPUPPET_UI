@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
 )
 
 func parseTrafficPageQuery(q url.Values) traffic.PageQuery {
@@ -64,7 +64,7 @@ func (s *Server) importTrafficHAR(w http.ResponseWriter, r *http.Request) {
 
 // exportTrafficHAR exports recorded traffic matching the query filters as an
 // application/json HAR 1.2 document in stable chronological order. Entry and
-// total-byte caps are enforced and reported via both X-ARTEX-HAR-* headers and
+// total-byte caps are enforced and reported via both X-SOCPUPPET_UI-HAR-* headers and
 // HAR 1.2 custom fields (_truncated, _truncatedReason, _totalMatched).
 func (s *Server) exportTrafficHAR(w http.ResponseWriter, r *http.Request) {
 	tr := s.m.Traffic()
@@ -84,12 +84,12 @@ func (s *Server) exportTrafficHAR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Content-Disposition", `attachment; filename="artex-traffic.har"`)
-	w.Header().Set("X-ARTEX-HAR-Truncated", strconv.FormatBool(meta.Truncated))
-	w.Header().Set("X-ARTEX-HAR-Exported", strconv.Itoa(meta.Exported))
-	w.Header().Set("X-ARTEX-HAR-Matched", strconv.Itoa(meta.TotalMatched))
+	w.Header().Set("Content-Disposition", `attachment; filename="socpuppet_ui-traffic.har"`)
+	w.Header().Set("X-SOCPUPPET_UI-HAR-Truncated", strconv.FormatBool(meta.Truncated))
+	w.Header().Set("X-SOCPUPPET_UI-HAR-Exported", strconv.Itoa(meta.Exported))
+	w.Header().Set("X-SOCPUPPET_UI-HAR-Matched", strconv.Itoa(meta.TotalMatched))
 	if meta.Truncated {
-		w.Header().Set("X-ARTEX-HAR-Truncated-Reason", meta.TruncatedReason)
+		w.Header().Set("X-SOCPUPPET_UI-HAR-Truncated-Reason", meta.TruncatedReason)
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(payload)

@@ -14,16 +14,16 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
 )
 
 // Environment names the shims read. They carry no secret: the executor id, the real
 // bash path and the executor's home directory.
 const (
-	envExecBash = "ARTEX_EXEC_BASH"
-	envExecUID  = "ARTEX_EXEC_UID"
-	envExecGID  = "ARTEX_EXEC_GID"
-	envExecHome = "ARTEX_EXEC_HOME"
+	envExecBash = "SOCPUPPET_UI_EXEC_BASH"
+	envExecUID  = "SOCPUPPET_UI_EXEC_UID"
+	envExecGID  = "SOCPUPPET_UI_EXEC_GID"
+	envExecHome = "SOCPUPPET_UI_EXEC_HOME"
 )
 
 // execHomeDir is the executor's home under the data directory. The server's HOME
@@ -126,7 +126,7 @@ func prepareExecScriptDir(p ExecPrivilege, dataDir string) (string, error) {
 }
 
 // prepareNormaTaskDir creates dir, the directory Norma keeps background-task output
-// in: os.TempDir()/norma, a path ARTEX does not choose. Norma creates it with the
+// in: os.TempDir()/norma, a path SOCPUPPET_UI does not choose. Norma creates it with the
 // first session and writes <session>/tasks/task_<n>.output below it from the server
 // process. The temp directory is world-writable: an executor process that runs
 // before that first session could create dir itself and place symlinks in it for
@@ -551,7 +551,7 @@ func InstallBashShim(p ExecPrivilege) error {
 	if self, err = filepath.EvalSymlinks(self); err != nil {
 		return fmt.Errorf("resolve the server binary: %w", err)
 	}
-	dir, err := os.MkdirTemp("", "artex-exec-")
+	dir, err := os.MkdirTemp("", "socpuppet_ui-exec-")
 	if err != nil {
 		return fmt.Errorf("create the shim directory: %w", err)
 	}
@@ -575,7 +575,7 @@ func InstallBashShim(p ExecPrivilege) error {
 }
 
 // RunExecShimIfRequested makes the process a privilege-drop shim when it was started
-// as one: as bash through the PATH shim, or as artex __artex-exec-drop for an MCP
+// as one: as bash through the PATH shim, or as socpuppet_ui __socpuppet_ui-exec-drop for an MCP
 // stdio command. It exits or execs the target; it returns only for an ordinary start.
 func RunExecShimIfRequested(argv []string) {
 	if len(argv) == 0 {
@@ -682,6 +682,6 @@ func shimExec(target string, argv []string) {
 }
 
 func shimFail(err error) {
-	fmt.Fprintf(os.Stderr, "artex: agent process not started: %v\n", err)
+	fmt.Fprintf(os.Stderr, "socpuppet_ui: agent process not started: %v\n", err)
 	os.Exit(126)
 }

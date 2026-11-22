@@ -143,8 +143,8 @@ Rules are never exposed as an agent tool.
 Rules live in the PostgreSQL table `traffic_rewrite_rules` (migration
 `0005_traffic_rewrite_rules.sql`). They are global configuration and are not part of a task
 archive. The `matchers` and `actions` columns are encrypted at rest with the instance secret key,
-like the other stored secrets: a database backup without `keys/secret.key` (or `ARTEX_SECRET_KEY`)
-cannot restore them, and ARTEX refuses to start under a key that cannot open them.
+like the other stored secrets: a database backup without `keys/secret.key` (or `SOCPUPPET_UI_SECRET_KEY`)
+cannot restore them, and SOCPUPPET_UI refuses to start under a key that cannot open them.
 
 The server compiles the enabled rules into an immutable snapshot at startup and after every rule
 change, and hands it to the proxy without a restart.
@@ -215,8 +215,8 @@ run enabled capture rules against a replay and trace them like captured traffic,
 `"apply_rules": true` (or check **Apply capture rewrite rules** in the Replay panel).
 
 When `apply_rules` is false, `traffic.Replay` registers a single-use random 32-byte hex nonce in an
-in-memory registry, attaches the internal header `X-ARTEX-Replay-Nonce: <nonce>`, and removes the
-nonce when the call returns. The capture proxy strips `X-ARTEX-Replay-Nonce` unconditionally in the
+in-memory registry, attaches the internal header `X-SOCPUPPET_UI-Replay-Nonce: <nonce>`, and removes the
+nonce when the call returns. The capture proxy strips `X-SOCPUPPET_UI-Replay-Nonce` unconditionally in the
 request hook so the target never sees it; only a value matching a registered nonce bypasses both
 request and response rule phases, while any forged header is stripped and ignored.
 

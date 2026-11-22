@@ -8,15 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
 )
 
 func TestNoiseProfileSettingHTTP(t *testing.T) {
 	skipWithoutDSN(t)
 	prev := egress.CurrentProfile()
 	t.Cleanup(func() { egress.SetProfile(prev) })
-	t.Setenv("ARTEX_NOISE_PROFILE", "quiet")
-	t.Setenv("ARTEX_TARGET_USER_AGENT", "artex-noise-test/1")
+	t.Setenv("SOCPUPPET_UI_NOISE_PROFILE", "quiet")
+	t.Setenv("SOCPUPPET_UI_TARGET_USER_AGENT", "socpuppet_ui-noise-test/1")
 
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
@@ -43,7 +43,7 @@ func TestNoiseProfileSettingHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	m2.Close()
-	if p := egress.CurrentProfile(); p.Name != "balanced" || p.UserAgent != "artex-noise-test/1" {
+	if p := egress.CurrentProfile(); p.Name != "balanced" || p.UserAgent != "socpuppet_ui-noise-test/1" {
 		t.Fatalf("NewManager with setting balanced applied %+v", p)
 	}
 	if err := m.pg.SetSetting(settingNoiseProfile, "loud"); err != nil {

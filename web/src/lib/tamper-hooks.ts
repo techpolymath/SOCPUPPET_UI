@@ -9,7 +9,7 @@ import type { TamperDryRunIO, TamperHookHeaderMatcher, TamperHookMatchers, Tampe
 export const DEFAULT_REQUEST_HOOK_SOURCE = `package hook
 
 func OnRequest(req *Request) error {
-\treq.SetHeader("X-Artex-Hook", "1")
+\treq.SetHeader("X-SOCPUPPET_UI-Hook", "1")
 \treturn nil
 }
 `;
@@ -17,7 +17,7 @@ func OnRequest(req *Request) error {
 export const DEFAULT_RESPONSE_HOOK_SOURCE = `package hook
 
 func OnResponse(req *Request, resp *Response) error {
-\tresp.SetHeader("X-Artex-Hook", "1")
+\tresp.SetHeader("X-SOCPUPPET_UI-Hook", "1")
 \treturn nil
 }
 `;

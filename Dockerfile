@@ -32,16 +32,16 @@ RUN go mod download
 COPY . .
 # Reuse the frontend built above; build.sh skips its own frontend step.
 COPY --from=web /src/web/out ./server/webui/dist
-ARG ARTEX_VERSION=dev
+ARG SOCPUPPET_UI_VERSION=dev
 ARG TARGETOS
 ARG TARGETARCH
-# Same flags as the release binaries job (ARTEX_COMPRESS=0, -trimpath,
+# Same flags as the release binaries job (SOCPUPPET_UI_COMPRESS=0, -trimpath,
 # -X main.version), driven through build.sh so there is one build path.
-RUN ARTEX_SKIP_FRONTEND=1 \
-    ARTEX_SKIP_NPM_CI=1 \
-    ARTEX_COMPRESS=0 \
-    ARTEX_OUTPUT=/out/artex \
-    ARTEX_BUILD_VERSION="${ARTEX_VERSION}" \
+RUN SOCPUPPET_UI_SKIP_FRONTEND=1 \
+    SOCPUPPET_UI_SKIP_NPM_CI=1 \
+    SOCPUPPET_UI_COMPRESS=0 \
+    SOCPUPPET_UI_OUTPUT=/out/socpuppet_ui \
+    SOCPUPPET_UI_BUILD_VERSION="${SOCPUPPET_UI_VERSION}" \
     bash ./build.sh --target "${TARGETOS:-linux}/${TARGETARCH:-amd64}"
 
 # ------------------------------------------------------- third-party tools ---
@@ -171,7 +171,7 @@ RUN set -eux; \
     ffuf -V >/dev/null; dalfox --version >/dev/null; sqlmap --version >/dev/null
 
 # bbot recursive recon orchestrator (#117): blacklanternsecurity/bbot, AGPL-3.0
-# (same license as ARTEX; standalone CLI dependency, not linked code). Pinned
+# (same license as SOCPUPPET_UI; standalone CLI dependency, not linked code). Pinned
 # version, own venv to isolate from the image python. Module dependencies are
 # preinstalled (--install-all-deps) so scans never need pip at runtime, which
 # would fail under a program's egress allowlist.
@@ -226,19 +226,19 @@ RUN npm install -g "@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}" "@playwright/cli@
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 WORKDIR /app
 # Binary compiled from source in the build stage above.
-COPY --from=build /out/artex /app/artex
+COPY --from=build /out/socpuppet_ui /app/socpuppet_ui
 # Daemon startup script: relaunches the process after a crash and forwards SIGTERM
-# to artex — docker stop only signals PID 1; without forwarding, artex never receives it,
+# to socpuppet_ui — docker stop only signals PID 1; without forwarding, socpuppet_ui never receives it,
 # cannot shut down gracefully, and is hard-killed by SIGKILL after 10 seconds.
 COPY start.sh /app/start.sh
-RUN chmod +x /app/artex /app/start.sh && mkdir -p -m 0700 /app/keys \
+RUN chmod +x /app/socpuppet_ui /app/start.sh && mkdir -p -m 0700 /app/keys \
     && chmod 0711 /root
 # No setuid or setgid programs (su, passwd, mount, bbot's chrome_sandbox, ...): an
 # agent process runs as the executor and must not regain root through one, even
 # when the container runs without docker-compose.yml's no-new-privileges.
 RUN find / -xdev -perm /6000 -type f -exec chmod a-s {} +
 COPY skills/ /app/skills/
-# persistence points: data/ (traffic index, task files, transcripts) and keys/ (jwt.key, secret.key, via ARTEX_JWT_KEY_DIR)
+# persistence points: data/ (traffic index, task files, transcripts) and keys/ (jwt.key, secret.key, via SOCPUPPET_UI_JWT_KEY_DIR)
 VOLUME ["/app/data", "/app/keys"]
 EXPOSE 8787 8788
 ENTRYPOINT ["/app/start.sh"]

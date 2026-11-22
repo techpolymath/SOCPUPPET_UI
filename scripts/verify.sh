@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify ARTEX locally, reproducing the checks from .github/workflows/ci.yml.
+# Verify SOCPUPPET_UI locally, reproducing the checks from .github/workflows/ci.yml.
 #
 # Usage:
 #   scripts/verify.sh [--full] [--go-only] [--web-only] [--keep-going]
@@ -86,8 +86,8 @@ if want_go; then
     exit 1
   fi
 
-  if [ -z "${ARTEX_PG_DSN:-}" ]; then
-    printf 'note: ARTEX_PG_DSN is unset; PostgreSQL-dependent tests will skip themselves\n'
+  if [ -z "${SOCPUPPET_UI_PG_DSN:-}" ]; then
+    printf 'note: SOCPUPPET_UI_PG_DSN is unset; PostgreSQL-dependent tests will skip themselves\n'
   fi
 
   check_gofmt() {
@@ -111,7 +111,7 @@ if want_go; then
 
   if [ "$FULL" -eq 1 ]; then
     RACE_PKGS=(
-      ./agent ./cmd/artex ./config ./db ./evidence ./guard
+      ./agent ./cmd/socpuppet_ui ./config ./db ./evidence ./guard
       ./intercept ./llmpool ./llmrec ./mcphttp ./notify ./server
       ./sidequestion ./traffic ./traffic/rewrite
     )

@@ -35,7 +35,7 @@ const (
 	// is false (the default). The capture proxy strips it unconditionally
 	// before forwarding and bypasses rewrite rules only when the value matches
 	// a live registered nonce.
-	replayNonceHeader = "X-ARTEX-Replay-Nonce"
+	replayNonceHeader = "X-SOCPUPPET_UI-Replay-Nonce"
 )
 
 // replayNonces holds live single-use nonces for in-flight Replay calls that

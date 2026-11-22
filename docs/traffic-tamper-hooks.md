@@ -1,10 +1,10 @@
 # Constrained Go Tampering Hooks (P4.2 — PR1 Backend, API & Trace)
 
-ARTEX supports opt-in, **operator-only** HTTP tampering hooks written in a constrained, deterministic subset of Go—with **no Python runtime** and **no external interpreter dependency**. Hooks run inside the capture proxy after declarative rewrite rules in each phase (`request` or `response`), fail open on any error, and record field-level diffs into SQLite `exchange_rewrites`.
+SOCPUPPET_UI supports opt-in, **operator-only** HTTP tampering hooks written in a constrained, deterministic subset of Go—with **no Python runtime** and **no external interpreter dependency**. Hooks run inside the capture proxy after declarative rewrite rules in each phase (`request` or `response`), fail open on any error, and record field-level diffs into SQLite `exchange_rewrites`.
 
 ## Kill Switch & Authority
 
-- **Kill switch (`ARTEX_TAMPER_HOOKS_ENABLED=1`, off by default)**: when unset or false, **zero hooks are loaded** onto the capture proxy and the proxy follows the unchanged baseline path.
+- **Kill switch (`SOCPUPPET_UI_TAMPER_HOOKS_ENABLED=1`, off by default)**: when unset or false, **zero hooks are loaded** onto the capture proxy and the proxy follows the unchanged baseline path.
 - **Operator-only**: hooks are global admin configuration managed only via `/api/traffic/hooks*` and are **never exposed as an agent tool**.
 - **Created disabled**: every hook is created with `enabled: false` and must be explicitly enabled via toggle or update.
 - **Sealed at rest**: `source` and `matchers` on both `traffic_tamper_hooks` and `traffic_tamper_hook_versions` (migration `0011_traffic_tamper_hooks.sql`) are encrypted at rest with `db/secrets.go` (AES-256-GCM) because a hook may contain hardcoded signing keys or tokens.
@@ -72,7 +72,7 @@ Hooks are parsed with Go's standard `go/parser` and must declare `package hook`.
 |---|---|---|---|
 | `*Request` | `Scheme`, `Host`, `Port` (`string`) | **Read-only** | Attempting to assign fails atomically (`forbidden_mutation`) |
 | `*Request` | `Method`, `Path`, `RawQuery` (`string`) | R/W (`OnRequest`), R/O (`OnResponse`) | `CONNECT` rejected; `Path` must start with `/` |
-| `*Request` | `Headers` (`map[string][]string`) | R/W (`OnRequest`), R/O (`OnResponse`) | Forbidden headers (`Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Keep-Alive`, `TE`, `Trailer`, `Expect`, `Upgrade`, `Proxy-*`, `X-ARTEX-Replay-Nonce`) and CRLF/NUL values rejected atomically |
+| `*Request` | `Headers` (`map[string][]string`) | R/W (`OnRequest`), R/O (`OnResponse`) | Forbidden headers (`Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Keep-Alive`, `TE`, `Trailer`, `Expect`, `Upgrade`, `Proxy-*`, `X-SOCPUPPET_UI-Replay-Nonce`) and CRLF/NUL values rejected atomically |
 | `*Request` | `Body` (`[]byte`) | R/W (`OnRequest`), R/O (`OnResponse`) | Capped at 1 MiB; mutating strips `Content-Length`, `ETag`, `Content-MD5`, `Content-Encoding` |
 | `*Request` / `*Response` | `GetHeader(name) string`, `SetHeader(name, val)`, `AddHeader(name, val)`, `DelHeader(name)` | Methods | Canonicalizes header keys |
 | `*Response` | `Status` (`int`) | R/W (`OnResponse`) | Must be `200..599` excluding `204` and `304` |

@@ -347,7 +347,7 @@ export default function NotifyPage() {
             <Label htmlFor="n-base">{t("Link-back URL")}</Label>
             <Input
               id="n-base"
-              placeholder="https://artex.example.com"
+              placeholder="https://socpuppet_ui.example.com"
               value={baseURL}
               onChange={(e) => setBaseURL(e.target.value)}
             />

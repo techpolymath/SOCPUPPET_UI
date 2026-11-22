@@ -1,18 +1,18 @@
 # Opt-in SOCKS5 UDP ASSOCIATE & Raw UDP Recording (P4.1c)
 
-ARTEX extends the opt-in SOCKS5 inbound listener with **RFC 1928 `UDP ASSOCIATE` (`0x03`)**, **IPv4 first**, enforcing per-datagram destination policy and recording forwarded datagrams separately from HTTP traffic in SQLite. Transparent UDP (`IP_RECVORIGDSTADDR`) is out of scope here and planned separately (C2).
+SOCPUPPET_UI extends the opt-in SOCKS5 inbound listener with **RFC 1928 `UDP ASSOCIATE` (`0x03`)**, **IPv4 first**, enforcing per-datagram destination policy and recording forwarded datagrams separately from HTTP traffic in SQLite. Transparent UDP (`IP_RECVORIGDSTADDR`) is out of scope here and planned separately (C2).
 
 ## Opt-in Configuration (Off by Default)
 
 | Environment Variable | Default | Behavior |
 |---|---|---|
-| `ARTEX_SOCKS5_UDP_ENABLED` | unset (off) | Set to `1` / `true` / `on` / `yes` to enable RFC 1928 `UDP ASSOCIATE` on the SOCKS5 listener (starting the SOCKS5 listener on `ARTEX_SOCKS5_ADDR` or `127.0.0.1:1080` unless `ARTEX_SOCKS5_ENABLED` is explicitly `0`/`false`/`off`/`no`). |
-| `ARTEX_SOCKS5_ENABLED` | unset (off) | Explicit `0` / `false` / `off` / `no` disables the entire SOCKS5 listener (TCP and UDP) even if `ARTEX_SOCKS5_UDP_ENABLED` is set. |
-| `ARTEX_SOCKS5_ADDR` | `127.0.0.1:1080` | Bind address for the SOCKS5 TCP control listener; per-association IPv4 UDP relay sockets bind on the same local IPv4 interface on an ephemeral port (`:0`). |
+| `SOCPUPPET_UI_SOCKS5_UDP_ENABLED` | unset (off) | Set to `1` / `true` / `on` / `yes` to enable RFC 1928 `UDP ASSOCIATE` on the SOCKS5 listener (starting the SOCKS5 listener on `SOCPUPPET_UI_SOCKS5_ADDR` or `127.0.0.1:1080` unless `SOCPUPPET_UI_SOCKS5_ENABLED` is explicitly `0`/`false`/`off`/`no`). |
+| `SOCPUPPET_UI_SOCKS5_ENABLED` | unset (off) | Explicit `0` / `false` / `off` / `no` disables the entire SOCKS5 listener (TCP and UDP) even if `SOCPUPPET_UI_SOCKS5_UDP_ENABLED` is set. |
+| `SOCPUPPET_UI_SOCKS5_ADDR` | `127.0.0.1:1080` | Bind address for the SOCKS5 TCP control listener; per-association IPv4 UDP relay sockets bind on the same local IPv4 interface on an ephemeral port (`:0`). |
 
 - **Flag off means no listener**:
   - With all SOCKS5 flags unset/off, no SOCKS5 listener and no UDP relay socket are started.
-  - With SOCKS5 TCP enabled and `ARTEX_SOCKS5_UDP_ENABLED` off, `UDP ASSOCIATE` (`0x03`) is refused with RFC 1928 reply `0x07` (*Command not supported*) and no UDP socket is opened.
+  - With SOCKS5 TCP enabled and `SOCPUPPET_UI_SOCKS5_UDP_ENABLED` off, `UDP ASSOCIATE` (`0x03`) is refused with RFC 1928 reply `0x07` (*Command not supported*) and no UDP socket is opened.
 - **Requires traffic recorder**: like P4.1a and P4.1b, the server only starts the SOCKS5 listener when the traffic recorder is enabled (inside the traffic proxy block in `server/manager.go`).
 - **Non-loopback warning**: the same authentication caveat from [docs/traffic-socks5.md](traffic-socks5.md) applies—RFC 1929 username/password accepts any credentials, so keep the listener bound to loopback (`127.0.0.1`) or restrict access at the host firewall.
 

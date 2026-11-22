@@ -1,8 +1,9 @@
+import ts from "typescript";
+
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
-import ts from "typescript";
 
 const sourceURL = new URL("../src/i18n/index.ts", import.meta.url);
 const code = ts.transpileModule(readFileSync(sourceURL, "utf8"), {

@@ -295,7 +295,7 @@ func loadSkillsConfined(dir string) (*skill.Registry, error) {
 	if len(safe) == 0 {
 		return skill.NewRegistry(), nil
 	}
-	tmp, err := os.MkdirTemp("", "artex-skills-*")
+	tmp, err := os.MkdirTemp("", "socpuppet_ui-skills-*")
 	if err != nil {
 		return nil, err
 	}

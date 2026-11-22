@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic/rewrite"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 func TestTamperHookHeaderAndBodyMutationAndTrace(t *testing.T) {
@@ -267,7 +267,7 @@ func OnRequest(req *Request) error {
 	// 3. No-hook baseline byte-identical (kill switch off / nil HookSet).
 	t.Setenv(TamperHooksEnabledEnv, "")
 	if TamperHooksEnabledFromEnv() {
-		t.Fatal("ARTEX_TAMPER_HOOKS_ENABLED must default to false")
+		t.Fatal("SOCPUPPET_UI_TAMPER_HOOKS_ENABLED must default to false")
 	}
 	var nilHooks *HookSet
 	base := nilHooks.Apply(rewrite.PhaseRequest, in, nil)

@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 func startUDPEchoServer(t *testing.T, addr string) (*net.UDPConn, *atomic.Int32) {
@@ -252,14 +252,14 @@ func TestSOCKS5UDPFlagOffMeansNoListenerAndRefusesAssociate(t *testing.T) {
 		t.Fatalf("all off = (%+v, %v), want disabled", cfg, ok)
 	}
 
-	// 2. Explicit ARTEX_SOCKS5_ENABLED=0 overrides ARTEX_SOCKS5_UDP_ENABLED=1 (no listener).
+	// 2. Explicit SOCPUPPET_UI_SOCKS5_ENABLED=0 overrides SOCPUPPET_UI_SOCKS5_UDP_ENABLED=1 (no listener).
 	t.Setenv(SOCKS5EnabledEnv, "0")
 	t.Setenv(SOCKS5UDPEnabledEnv, "1")
 	if cfg, ok := SOCKS5ConfigFromEnv(); ok {
 		t.Fatalf("explicit socks5=0 with udp=1 = (%+v, %v), want disabled", cfg, ok)
 	}
 
-	// 3. ARTEX_SOCKS5_UDP_ENABLED=1 alone enables SOCKS5 on DefaultSOCKS5Addr with EnableUDP=true.
+	// 3. SOCPUPPET_UI_SOCKS5_UDP_ENABLED=1 alone enables SOCKS5 on DefaultSOCKS5Addr with EnableUDP=true.
 	t.Setenv(SOCKS5EnabledEnv, "")
 	t.Setenv(SOCKS5AddrEnv, "")
 	t.Setenv(SOCKS5UDPEnabledEnv, "1")

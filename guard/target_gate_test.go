@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 // fakeGate scripts the target gate. check and request receive the number of
@@ -482,7 +482,7 @@ func (g *gateDB) onePending(ch <-chan hookResult) approvalRow {
 
 func (g *gateDB) decide(id int64, allowed bool) {
 	g.t.Helper()
-	if err := g.ic.Decide(id, allowed, "ARTEX", "192.0.2.1"); err != nil {
+	if err := g.ic.Decide(id, allowed, "SOCPUPPET_UI", "192.0.2.1"); err != nil {
 		g.t.Fatal(err)
 	}
 }

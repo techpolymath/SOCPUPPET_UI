@@ -11,15 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/intercept"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/harness"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
 	"github.com/Autumn-27/norma/transcript"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 // Worker is an LLM work agent (docs §4.4): it claims ONE intent, completes it
@@ -109,7 +109,7 @@ func WorkerSessionID(explorationID, intentID int64) string {
 	return fmt.Sprintf("exp%d-worker-i%d", explorationID, intentID)
 }
 
-const workerChatMarkerPrefix = "<!-- ARTEX_WORKER_CHAT:"
+const workerChatMarkerPrefix = "<!-- SOCPUPPET_UI_WORKER_CHAT:"
 
 func workerChatMarker(requestID string) string {
 	return workerChatMarkerPrefix + requestID + " -->"
@@ -396,7 +396,7 @@ func IsRunDirName(name string) bool {
 // prompt cache-prefix split (P3.5 phase C). Off by default: when unset/false,
 // worker system segments and DynamicBoundary are byte-identical to the legacy
 // layout. Planner, mainagent, chat, and goals are unaffected.
-const CachePrefixEnv = "ARTEX_CACHE_PREFIX"
+const CachePrefixEnv = "SOCPUPPET_UI_CACHE_PREFIX"
 
 func cachePrefixEnabled() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(CachePrefixEnv))) {
@@ -430,7 +430,7 @@ func workerSystem(proxyAddr, caCert, dataDir, runDir string) string {
 // assembleWorkerSystem builds the worker's SystemPrompt segments and
 // DynamicBoundary. When split is false (default), it delegates directly to
 // deferredSystem(staticPart+dynamicTail, def). When split is true
-// (ARTEX_CACHE_PREFIX=1), it emits two segments [staticPart, dynamic] with
+// (SOCPUPPET_UI_CACHE_PREFIX=1), it emits two segments [staticPart, dynamic] with
 // DynamicBoundary=1 so sibling workers in the same task share the cached static
 // prefix, absorbing the leading "\n\n" separator from workerArtifactSpec so
 // strings.Join(system, "\n\n") is byte-identical to the unsplit prompt.
@@ -668,7 +668,7 @@ func (w *Worker) execute(ctx context.Context, name string, taskID int64, as *db.
 		NonStreaming:  w.nonStreaming(),                       // when this profile selects non-streaming, use Provider.Complete
 		MaxTokens:     w.maxTokens(),                          // 0 = send no cap; the server default decides
 
-		// On by default; ARTEX_UNTRUSTED_BOUNDARY=0 opts out: nonce-frame tool output as untrusted data.
+		// On by default; SOCPUPPET_UI_UNTRUSTED_BOUNDARY=0 opts out: nonce-frame tool output as untrusted data.
 		UntrustedOutputBoundary: untrustedBoundaryEnabled(),
 	}
 	if hooks != nil { // typed-nil guard: only set when concrete (avoids harness panic)

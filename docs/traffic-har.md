@@ -1,6 +1,6 @@
 # Traffic HAR 1.2 Import and Export
 
-ARTEX supports importing and exporting captured HTTP traffic using the **HAR 1.2** JSON format so operators can bring captures from browser DevTools or external proxies into the Traffic store and export filtered subsets out of ARTEX.
+SOCPUPPET_UI supports importing and exporting captured HTTP traffic using the **HAR 1.2** JSON format so operators can bring captures from browser DevTools or external proxies into the Traffic store and export filtered subsets out of SOCPUPPET_UI.
 
 Both routes require the standard administrator JWT (`Authorization: Bearer <token>`) like the rest of `/api/traffic`, and return `503` when the traffic store is unavailable.
 
@@ -50,8 +50,8 @@ Individual malformed entries (invalid `startedDateTime`, non-HTTP(S) URL, invali
 
 ### Deterministic IDs, round-trip fidelity, & idempotence
 
-- **ARTEX exports (`_artexExchangeId`)**: Every entry exported by ARTEX carries the HAR 1.2 custom field `_artexExchangeId` set to the exchange's stored ID. When a valid `_artexExchangeId` (`[A-Za-z0-9._:-]`, 1–128 chars) is present on import, ARTEX preserves it. This guarantees that two distinct ARTEX exchanges recorded within the same second with identical method, URL, status, and bodies do **not** collapse into one row when imported into a fresh store, and that re-importing an export into the source store stays idempotent (`skipped`).
-- **External HARs (no `_artexExchangeId`)**: Each entry receives a deterministic content-based ID:
+- **SOCPUPPET_UI exports (`_socpuppet_uiExchangeId`)**: Every entry exported by SOCPUPPET_UI carries the HAR 1.2 custom field `_socpuppet_uiExchangeId` set to the exchange's stored ID. When a valid `_socpuppet_uiExchangeId` (`[A-Za-z0-9._:-]`, 1–128 chars) is present on import, SOCPUPPET_UI preserves it. This guarantees that two distinct SOCPUPPET_UI exchanges recorded within the same second with identical method, URL, status, and bodies do **not** collapse into one row when imported into a fresh store, and that re-importing an export into the source store stays idempotent (`skipped`).
+- **External HARs (no `_socpuppet_uiExchangeId`)**: Each entry receives a deterministic content-based ID:
 
 ```text
 har-<hex(sha256(ts_unix_seconds + NUL + METHOD + NUL + canonical_url + NUL + status + NUL + sha256(req_body) + NUL + sha256(resp_body)))>
@@ -61,10 +61,10 @@ har-<hex(sha256(ts_unix_seconds + NUL + METHOD + NUL + canonical_url + NUL + sta
 
 ### Storage, bodies, cookies, `postData.params`, and userinfo
 
-- **URL userinfo**: Any `user:pass@` userinfo in `request.url` is stripped before storing, indexing, listing, exporting, or reporting errors (matching ARTEX's asset store).
+- **URL userinfo**: Any `user:pass@` userinfo in `request.url` is stripped before storing, indexing, listing, exporting, or reporting errors (matching SOCPUPPET_UI's asset store).
 - `host` is derived from `URL.Hostname()` and `url_template` from `db.TemplatePath(URL.EscapedPath())`; `path` stays empty.
-- **Bodies & base64**: `response.content.text` and `request.postData.text` are stored as raw UTF-8 bytes when `encoding` is empty, and decoded via standard base64 when `encoding` is `"base64"`. When `request.postData.text` is empty and `request.postData.params` is populated, ARTEX reconstructs the form body as `application/x-www-form-urlencoded` (preserving parameter order).
-- **Cookies arrays**: When `request.headers` does not already include a `Cookie` header and `request.cookies` is non-empty, ARTEX synthesizes a `Cookie` header from `request.cookies`. Likewise, when `response.headers` does not already include a `Set-Cookie` header and `response.cookies` is non-empty, ARTEX synthesizes `Set-Cookie` headers from `response.cookies`. When the headers are already present, they are kept as-is without duplication.
+- **Bodies & base64**: `response.content.text` and `request.postData.text` are stored as raw UTF-8 bytes when `encoding` is empty, and decoded via standard base64 when `encoding` is `"base64"`. When `request.postData.text` is empty and `request.postData.params` is populated, SOCPUPPET_UI reconstructs the form body as `application/x-www-form-urlencoded` (preserving parameter order).
+- **Cookies arrays**: When `request.headers` does not already include a `Cookie` header and `request.cookies` is non-empty, SOCPUPPET_UI synthesizes a `Cookie` header from `request.cookies`. Likewise, when `response.headers` does not already include a `Set-Cookie` header and `response.cookies` is non-empty, SOCPUPPET_UI synthesizes `Set-Cookie` headers from `response.cookies`. When the headers are already present, they are kept as-is without duplication.
 - `req_len` and `resp_len` record the actual decoded byte lengths.
 - `content_type` comes from `response.content.mimeType` (falling back to the response `Content-Type` header).
 - Bodies larger than the 256 KiB inline threshold spill to the content-addressed blob store (`_blobs/sha256/...`) with `blob_refs` rows, and searchable text bodies are added to the `ex_fts` full-text index — identical to proxy capture and `ImportArchive`.
@@ -87,7 +87,7 @@ HAR import writes directly to the traffic store without passing through the MITM
 
 ### Request & filters
 
-Returns an `application/json` HAR 1.2 document (`Content-Disposition: attachment; filename="artex-traffic.har"`) ordered deterministically by `(ts ASC, id ASC)`.
+Returns an `application/json` HAR 1.2 document (`Content-Disposition: attachment; filename="socpuppet_ui-traffic.har"`) ordered deterministically by `(ts ASC, id ASC)`.
 
 It reuses the same filter parser and SQL predicate builder as `GET /api/traffic`, supporting:
 
@@ -95,10 +95,10 @@ It reuses the same filter parser and SQL predicate builder as `GET /api/traffic`
 
 ### HAR 1.2 compliance & unknown placeholders
 
-- `log.version` is `"1.2"` and `log.creator` is `{"name": "ARTEX", "version": "<build-version>"}`.
-- `startedDateTime` is formatted from `exchanges.ts` as UTC RFC 3339, and `_artexExchangeId` carries the exchange's stored ID.
-- Request and response headers are parsed from the stored raw heads (`req_head` / `resp_head`). ARTEX does not invent `serverIPAddress` or headers that are not present in the store.
-- Required HAR 1.2 fields whose values are not recorded by ARTEX are emitted with explicit **unknown placeholders** rather than fabricated measurements:
+- `log.version` is `"1.2"` and `log.creator` is `{"name": "SOCPUPPET_UI", "version": "<build-version>"}`.
+- `startedDateTime` is formatted from `exchanges.ts` as UTC RFC 3339, and `_socpuppet_uiExchangeId` carries the exchange's stored ID.
+- Request and response headers are parsed from the stored raw heads (`req_head` / `resp_head`). SOCPUPPET_UI does not invent `serverIPAddress` or headers that are not present in the store.
+- Required HAR 1.2 fields whose values are not recorded by SOCPUPPET_UI are emitted with explicit **unknown placeholders** rather than fabricated measurements:
   - `entry.time`: `0`
   - `entry.cache`: `{}`
   - `entry.timings`: `{"send": -1, "wait": -1, "receive": -1}` (unknown/unavailable per HAR 1.2)
@@ -120,10 +120,10 @@ It reuses the same filter parser and SQL predicate builder as `GET /api/traffic`
 Truncation is never silent. Every export reports it in both HTTP response headers and HAR 1.2 custom (`_`-prefixed) `log` fields:
 
 - Headers:
-  - `X-ARTEX-HAR-Truncated: true|false`
-  - `X-ARTEX-HAR-Truncated-Reason: max_entries|max_bytes` (when truncated)
-  - `X-ARTEX-HAR-Exported: <count>`
-  - `X-ARTEX-HAR-Matched: <total matching rows>`
+  - `X-SOCPUPPET_UI-HAR-Truncated: true|false`
+  - `X-SOCPUPPET_UI-HAR-Truncated-Reason: max_entries|max_bytes` (when truncated)
+  - `X-SOCPUPPET_UI-HAR-Exported: <count>`
+  - `X-SOCPUPPET_UI-HAR-Matched: <total matching rows>`
 - JSON (`log` object, omitted when not truncated):
   - `_truncated: true`
   - `_truncatedReason: "max_entries" | "max_bytes"`

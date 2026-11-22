@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
 )
 
 func dialTestServerForHosts(routes map[string]string, fallback func(ctx context.Context, network, addr string) (net.Conn, error)) func(ctx context.Context, network, addr string) (net.Conn, error) {

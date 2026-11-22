@@ -1,4 +1,4 @@
-module github.com/Autumn-27/artex
+module github.com/techpolymath/SOCPUPPET_UI
 
 go 1.26.11
 

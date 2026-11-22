@@ -147,8 +147,8 @@ func TestReview318CredentialsSurviveEnvScrub(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			isolateAWSCredentials(t)
 			for _, key := range append([]string{
-				"ARTEX_ARCHIVE_S3_ACCESS_KEY_ID", "ARTEX_ARCHIVE_S3_SECRET_ACCESS_KEY", "ARTEX_ARCHIVE_S3_SESSION_TOKEN",
-				"ARTEX_ARCHIVE_S3_SSE", "ARTEX_ARCHIVE_S3_KMS_KEY_ID", "ARTEX_ARCHIVE_S3_PREFIX", "AWS_ENDPOINT_URL_STS",
+				"SOCPUPPET_UI_ARCHIVE_S3_ACCESS_KEY_ID", "SOCPUPPET_UI_ARCHIVE_S3_SECRET_ACCESS_KEY", "SOCPUPPET_UI_ARCHIVE_S3_SESSION_TOKEN",
+				"SOCPUPPET_UI_ARCHIVE_S3_SSE", "SOCPUPPET_UI_ARCHIVE_S3_KMS_KEY_ID", "SOCPUPPET_UI_ARCHIVE_S3_PREFIX", "AWS_ENDPOINT_URL_STS",
 			}, scrubbed...) {
 				t.Setenv(key, "")
 			}
@@ -209,11 +209,11 @@ func TestReview318CredentialsSurviveEnvScrub(t *testing.T) {
 				w.WriteHeader(http.StatusNotFound)
 			}))
 			defer objects.Close()
-			t.Setenv("ARTEX_ARCHIVE_STORAGE", "s3")
-			t.Setenv("ARTEX_ARCHIVE_S3_ENDPOINT", objects.URL)
-			t.Setenv("ARTEX_ARCHIVE_S3_REGION", "us-east-1")
-			t.Setenv("ARTEX_ARCHIVE_S3_BUCKET", "fixture")
-			t.Setenv("ARTEX_ARCHIVE_S3_PATH_STYLE", "true")
+			t.Setenv("SOCPUPPET_UI_ARCHIVE_STORAGE", "s3")
+			t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_ENDPOINT", objects.URL)
+			t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_REGION", "us-east-1")
+			t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_BUCKET", "fixture")
+			t.Setenv("SOCPUPPET_UI_ARCHIVE_S3_PATH_STYLE", "true")
 			store, err := FromEnv()
 			if err != nil || store == nil {
 				t.Fatalf("store from environment: %v", err)

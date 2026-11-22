@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // csrfRequest builds a request to http://example.com (the httptest default
-// host) with the given headers. A "Cookie" value is the artex_token cookie.
+// host) with the given headers. A "Cookie" value is the socpuppet_ui_token cookie.
 func csrfRequest(method, path, body string, headers map[string]string) *http.Request {
 	r := httptest.NewRequest(method, path, strings.NewReader(body))
 	for k, v := range headers {
 		if k == "Cookie" {
-			r.AddCookie(&http.Cookie{Name: "artex_token", Value: v})
+			r.AddCookie(&http.Cookie{Name: "socpuppet_ui_token", Value: v})
 			continue
 		}
 		r.Header.Set(k, v)
@@ -28,7 +28,7 @@ func csrfRequest(method, path, body string, headers map[string]string) *http.Req
 	return r
 }
 
-// A session that arrives as the artex_token cookie is sent by the browser on
+// A session that arrives as the socpuppet_ui_token cookie is sent by the browser on
 // its own, so a state-changing request that carries it must come from the
 // console's own origin. requireAuth is exercised directly, without a database.
 func TestCookieStateChangeNeedsSameOrigin(t *testing.T) {

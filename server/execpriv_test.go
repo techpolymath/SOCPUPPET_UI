@@ -85,8 +85,8 @@ func TestWithExecPrivilegeSetsServerField(t *testing.T) {
 
 func TestSealedEnvRoundTripKeepsEmptyAndMultiline(t *testing.T) {
 	in := []string{
-		"ARTEX_PG_DSN=postgres://u:p@h/db?sslmode=disable\nsecond line\ttab",
-		"ARTEX_SECRET_KEY=",
+		"SOCPUPPET_UI_PG_DSN=postgres://u:p@h/db?sslmode=disable\nsecond line\ttab",
+		"SOCPUPPET_UI_SECRET_KEY=",
 		"ANTHROPIC_API_KEY=sk-ant-test",
 		"OPENAI_API_KEY==leading-equals",
 	}
@@ -109,7 +109,7 @@ func TestSealedEnvRejectsForeignNames(t *testing.T) {
 }
 
 func TestWithoutSecretEnvDropsOnlySecrets(t *testing.T) {
-	env := []string{"PATH=/bin", "ARTEX_PG_DSN=x", "HOME=/root", "OPENAI_API_KEY=", "ARTEX_SECRET_KEY=y"}
+	env := []string{"PATH=/bin", "SOCPUPPET_UI_PG_DSN=x", "HOME=/root", "OPENAI_API_KEY=", "SOCPUPPET_UI_SECRET_KEY=y"}
 	got := withoutSecretEnv(env)
 	want := []string{"PATH=/bin", "HOME=/root"}
 	if !reflect.DeepEqual(got, want) {

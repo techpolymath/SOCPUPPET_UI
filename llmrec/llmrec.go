@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // errStreamAbandoned marks a stream whose consumer stopped reading before

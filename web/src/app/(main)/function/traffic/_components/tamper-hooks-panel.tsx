@@ -412,7 +412,7 @@ export function TamperHooksPanel({ recentExchanges = [] }: { recentExchanges?: T
           <AlertTriangleIcon className="size-4 text-amber-500" />
           <AlertDescription className="text-xs">
             {t(
-              "Live hook execution is disabled (ARTEX_TAMPER_HOOKS_ENABLED is off). You can create, edit, version, and dry-run hooks, but none will run on live proxy traffic until enabled.",
+              "Live hook execution is disabled (SOCPUPPET_UI_TAMPER_HOOKS_ENABLED is off). You can create, edit, version, and dry-run hooks, but none will run on live proxy traffic until enabled.",
             )}
           </AlertDescription>
         </Alert>

@@ -16,20 +16,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic/hookvm"
-	"github.com/Autumn-27/artex/traffic/rewrite"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/hookvm"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 // Opt-in kill switch for constrained Go tampering hooks (P4.2).
 // Off by default: when unset/false, zero hooks are loaded and the proxy
 // follows the unchanged baseline path.
 const (
-	TamperHooksEnabledEnv   = "ARTEX_TAMPER_HOOKS_ENABLED"
+	TamperHooksEnabledEnv   = "SOCPUPPET_UI_TAMPER_HOOKS_ENABLED"
 	DefaultHookTimeout      = 25 * time.Millisecond
 	DefaultPhaseHookTimeout = 100 * time.Millisecond
 )
 
-// TamperHooksEnabledFromEnv reports whether ARTEX_TAMPER_HOOKS_ENABLED is truthy.
+// TamperHooksEnabledFromEnv reports whether SOCPUPPET_UI_TAMPER_HOOKS_ENABLED is truthy.
 func TamperHooksEnabledFromEnv() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(TamperHooksEnabledEnv))) {
 	case "1", "true", "yes", "on":

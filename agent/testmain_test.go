@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // TestMain acquires a PostgreSQL advisory lock (7337741002) for the entire
@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 	// directory of their own, so a session they start never writes the host's
 	// <temp>/norma. It is world-writable and sticky like /tmp: MkdirTemp makes it
 	// 0700, which an executor process could not traverse.
-	tmp, err := os.MkdirTemp("", "artex-test-tmp-")
+	tmp, err := os.MkdirTemp("", "socpuppet_ui-test-tmp-")
 	if err != nil {
 		log.Fatalf("test temp directory: %v", err)
 	}

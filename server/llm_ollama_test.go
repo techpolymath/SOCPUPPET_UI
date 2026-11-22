@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // ConfigFrom("ollama", ...) must normalize to the keyless sentinel with our own
@@ -234,13 +234,13 @@ func TestOllamaListModels(t *testing.T) {
 	}
 }
 
-// The environment path must normalize the base URL too: ARTEX_LLM_BASE_URL is
+// The environment path must normalize the base URL too: SOCPUPPET_UI_LLM_BASE_URL is
 // the natural way to configure a LAN Ollama server, and it used to send chat to
 // /chat/completions instead of /v1/chat/completions.
 func TestOllamaFromEnvNormalizesBaseURL(t *testing.T) {
-	t.Setenv("ARTEX_LLM_PROVIDER", "ollama")
+	t.Setenv("SOCPUPPET_UI_LLM_PROVIDER", "ollama")
 	t.Setenv("OPENAI_API_KEY", "")
-	t.Setenv("ARTEX_LLM_BASE_URL", "http://box:11434")
+	t.Setenv("SOCPUPPET_UI_LLM_BASE_URL", "http://box:11434")
 	c, ok := agent.FromEnv()
 	if !ok {
 		t.Fatal("ollama env config must be usable")
@@ -248,7 +248,7 @@ func TestOllamaFromEnvNormalizesBaseURL(t *testing.T) {
 	if c.BaseURL != "http://box:11434/v1" {
 		t.Fatalf("env base URL not normalized: %q", c.BaseURL)
 	}
-	t.Setenv("ARTEX_LLM_BASE_URL", "http://box:11434/v1/chat/completions")
+	t.Setenv("SOCPUPPET_UI_LLM_BASE_URL", "http://box:11434/v1/chat/completions")
 	c, ok = agent.FromEnv()
 	if !ok {
 		t.Fatal("ollama env config must be usable")
@@ -262,9 +262,9 @@ func TestOllamaFromEnvNormalizesBaseURL(t *testing.T) {
 // Ollama ignores the bearer token, so inheritance would only ship the cloud key
 // to the local or LAN endpoint.
 func TestOllamaFromEnvDoesNotInheritOpenAIKey(t *testing.T) {
-	t.Setenv("ARTEX_LLM_PROVIDER", "ollama")
+	t.Setenv("SOCPUPPET_UI_LLM_PROVIDER", "ollama")
 	t.Setenv("OPENAI_API_KEY", "sk-cloud-secret")
-	t.Setenv("ARTEX_LLM_BASE_URL", "")
+	t.Setenv("SOCPUPPET_UI_LLM_BASE_URL", "")
 	c, ok := agent.FromEnv()
 	if !ok {
 		t.Fatal("ollama env config must be usable without a key")

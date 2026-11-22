@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/archivestore"
-	pgdb "github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/archivestore"
+	pgdb "github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // An S3-compatible endpoint that answers CreateMultipartUpload with 200 and no
@@ -25,7 +25,7 @@ import (
 // other upload error, keep the source data, and leave the process running.
 func TestReview318ArchiveWorkerSurvivesUploadPanic(t *testing.T) {
 	skipWithoutDSN(t)
-	t.Setenv("ARTEX_ARCHIVE_STORAGE", "local")
+	t.Setenv("SOCPUPPET_UI_ARCHIVE_STORAGE", "local")
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
 		t.Fatal(err)

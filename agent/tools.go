@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
 	acperm "github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // compactIntents distills intents to {id, summary, state, asset_ids, parents,

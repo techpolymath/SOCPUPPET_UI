@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 func TestArgvArityTable(t *testing.T) {

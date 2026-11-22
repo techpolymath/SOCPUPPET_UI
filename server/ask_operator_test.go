@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 // A worker's image_path is read from its run directory tasks/<id>/i<N>; the copy is

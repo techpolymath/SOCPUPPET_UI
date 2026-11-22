@@ -20,16 +20,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
-	"github.com/Autumn-27/artex/traffic/rewrite"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 func evidenceFixture(t *testing.T) (*Store, db.RecordFindingInput, string) {
 	t.Helper()
-	dsn := os.Getenv("ARTEX_PG_DSN")
+	dsn := os.Getenv("SOCPUPPET_UI_PG_DSN")
 	if dsn == "" {
-		t.Skip("ARTEX_PG_DSN is required for evidence integration tests")
+		t.Skip("SOCPUPPET_UI_PG_DSN is required for evidence integration tests")
 	}
 	pg, err := db.Open(dsn)
 	if err != nil {
@@ -369,9 +369,9 @@ func startRewriteProxy(t *testing.T, dir string) (*traffic.Traffic, string) {
 }
 
 func TestEvidenceBindingRewrittenExchange(t *testing.T) {
-	dsn := os.Getenv("ARTEX_PG_DSN")
+	dsn := os.Getenv("SOCPUPPET_UI_PG_DSN")
 	if dsn == "" {
-		t.Skip("ARTEX_PG_DSN is required for evidence integration tests")
+		t.Skip("SOCPUPPET_UI_PG_DSN is required for evidence integration tests")
 	}
 	pg, err := db.Open(dsn)
 	if err != nil {

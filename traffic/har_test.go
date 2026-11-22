@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/traffic/rewrite"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 func TestHARRoundTripPlainBase64BinaryEmptyAndLargeBlob(t *testing.T) {
@@ -504,7 +504,7 @@ func TestHARTwoIdenticalExchangesRoundTripPreservesBoth(t *testing.T) {
 	}
 	defer src.Close()
 
-	// Two distinct ARTEX exchanges recorded in the same second with identical
+	// Two distinct SOCPUPPET_UI exchanges recorded in the same second with identical
 	// method, URL, status, headers, and bodies.
 	for _, id := range []string{"dup-a", "dup-b"} {
 		if _, err := src.DB().Exec(`INSERT INTO exchanges(id,ts,host,method,url_template,url,status,content_type,req_len,resp_len,path)
@@ -524,9 +524,9 @@ VALUES(?,'POST /ping HTTP/1.1\nHost: same.example\n',?,'HTTP/1.1 200 OK\n',?)`, 
 	if meta.Exported != 2 || len(exported.Log.Entries) != 2 {
 		t.Fatalf("export = %+v, want 2 entries", meta)
 	}
-	if exported.Log.Entries[0].ArtexExchangeID != "dup-a" || exported.Log.Entries[1].ArtexExchangeID != "dup-b" {
-		t.Fatalf("exported _artexExchangeId = [%q %q], want [dup-a dup-b]",
-			exported.Log.Entries[0].ArtexExchangeID, exported.Log.Entries[1].ArtexExchangeID)
+	if exported.Log.Entries[0].SOCPUPPET_UIExchangeID != "dup-a" || exported.Log.Entries[1].SOCPUPPET_UIExchangeID != "dup-b" {
+		t.Fatalf("exported _socpuppet_uiExchangeId = [%q %q], want [dup-a dup-b]",
+			exported.Log.Entries[0].SOCPUPPET_UIExchangeID, exported.Log.Entries[1].SOCPUPPET_UIExchangeID)
 	}
 	raw, err := json.Marshal(exported)
 	if err != nil {

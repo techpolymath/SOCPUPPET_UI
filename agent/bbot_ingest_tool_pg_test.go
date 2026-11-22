@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // A benign bbot output: one in-scope host, one out-of-scope host, one event

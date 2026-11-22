@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
 )
 
 // Root test of the command-output spill. The agent turned <run dir>/cmd-output into

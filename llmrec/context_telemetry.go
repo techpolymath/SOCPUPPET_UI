@@ -6,16 +6,16 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // ContextTelemetryEnv is the opt-in environment flag enabling per-call context
 // size telemetry into llm_context. Off by default: when unset/false, no sizing
 // work runs and no rows are written.
-const ContextTelemetryEnv = "ARTEX_CONTEXT_TELEMETRY"
+const ContextTelemetryEnv = "SOCPUPPET_UI_CONTEXT_TELEMETRY"
 
-// ContextTelemetryEnabled reports whether ARTEX_CONTEXT_TELEMETRY is enabled
+// ContextTelemetryEnabled reports whether SOCPUPPET_UI_CONTEXT_TELEMETRY is enabled
 // (1, true, on, yes; case-insensitive). Default is false.
 func ContextTelemetryEnabled() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(ContextTelemetryEnv))) {

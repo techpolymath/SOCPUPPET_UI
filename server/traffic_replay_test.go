@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic"
-	"github.com/Autumn-27/artex/traffic/rewrite"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 // replayServer wires a Server like ingestServer. With traffic off,

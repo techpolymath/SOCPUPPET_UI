@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/sidequestion"
 	"github.com/Autumn-27/norma/llm"
+	"github.com/techpolymath/SOCPUPPET_UI/sidequestion"
 )
 
 func sideFixture(t *testing.T) (*DB, sidequestion.Snapshot) {

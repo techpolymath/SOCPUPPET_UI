@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // normalizeFactSource: empty is inference, every enum value is kept, case and

@@ -79,7 +79,7 @@ func TestLLMModelsDialGuardRefusesReservedRanges(t *testing.T) {
 	}
 }
 
-// An endpoint the operator listed in ARTEX_LLM_PRIVATE_ENDPOINTS may sit in
+// An endpoint the operator listed in SOCPUPPET_UI_LLM_PRIVATE_ENDPOINTS may sit in
 // carrier-grade NAT space (an overlay network) or in the benchmarking range
 // (a fake-IP resolver), as it may in RFC 1918 space. The other reserved ranges
 // and the metadata address inside 100.64.0.0/10 are never allowed.

@@ -94,11 +94,26 @@ export default function LoginPage() {
   return (
     <div className="flex h-dvh">
       {/* Left panel */}
-      <div className="hidden flex-col items-center justify-center bg-primary p-12 text-center lg:flex lg:w-1/3">
+      <div className="hidden flex-col items-center justify-center bg-black p-12 text-center lg:flex lg:w-1/3">
         <div className="relative flex items-center justify-center">
-          <div className="absolute size-80 rounded-full border border-primary-foreground/10" />
-          <div className="absolute size-60 rounded-full border border-primary-foreground/15" />
-          <div className="absolute size-40 rounded-full border border-primary-foreground/20" />
+          <div className="absolute size-[22rem] rounded-full border border-white/10">
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-0 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-white via-white to-zinc-400 shadow-[0_0_8px_rgba(255,255,255,0.65)]"
+            />
+          </div>
+          <div className="absolute size-[17rem] rounded-full border border-white/15">
+            <span
+              aria-hidden="true"
+              className="absolute bottom-[12%] left-[8%] size-3 rounded-full bg-gradient-to-br from-white via-white to-zinc-400 shadow-[0_0_7px_rgba(255,255,255,0.6)]"
+            />
+          </div>
+          <div className="absolute size-48 rounded-full border border-white/20">
+            <span
+              aria-hidden="true"
+              className="absolute right-0 top-1/2 size-2.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-gradient-to-br from-white via-white to-zinc-400 shadow-[0_0_6px_rgba(255,255,255,0.55)]"
+            />
+          </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="SOCPuppet" width={160} height={160} className="relative object-contain" />
         </div>
@@ -197,7 +212,7 @@ export default function LoginPage() {
               </h4>
               <p className="pl-7">
                 {t(
-                  "This software (SOCPuppet) is an open-source derivative of ARTEX released under the GNU Affero General Public License v3.0 (AGPL-3.0). You may freely use, copy, modify, and distribute it under that license; however, any derivative work (including online services provided to third parties over a network) must likewise be open-sourced under the AGPL-3.0 license with the complete corresponding source code made public to its users. The full AGPL-3.0 terms are governed by the accompanying LICENSE file.",
+                  "This software (SOCPuppet) is released under the GNU Affero General Public License v3.0 (AGPL-3.0). You may freely use, copy, modify, and distribute it under that license; however, any derivative work (including online services provided to third parties over a network) must likewise be open-sourced under the AGPL-3.0 license with the complete corresponding source code made public to its users. The full AGPL-3.0 terms are governed by the accompanying LICENSE file.",
                 )}
               </p>
             </section>

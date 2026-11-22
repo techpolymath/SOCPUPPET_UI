@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 const (
@@ -34,6 +34,7 @@ type chatGPTCredential struct {
 	Email        string    `json:"email,omitempty"`
 	Issuer       string    `json:"issuer,omitempty"`
 	Subject      string    `json:"subject,omitempty"`
+	AccountID    string    `json:"account_id,omitempty"`
 	ClientID     string    `json:"client_id,omitempty"`
 	HostID       string    `json:"ext_agent_host_id,omitempty"`
 	IDToken      string    `json:"id_token,omitempty"`
@@ -62,6 +63,11 @@ type chatGPTTokenResponse struct {
 	ExpiresIn       int64  `json:"expires_in"`
 	Scope           string `json:"scope"`
 	EarliestRefresh int64  `json:"earliest_refresh_at"`
+}
+
+type chatGPTModelOption struct {
+	Slug        string `json:"slug"`
+	DisplayName string `json:"display_name"`
 }
 
 type chatGPTAuthManager struct {
@@ -162,6 +168,57 @@ func (m *chatGPTAuthManager) InvalidateAccessToken(token string) {
 	}
 }
 
+// AccountID implements agent.ChatGPTTokenSource. Older saved credentials did
+// not persist the selected ChatGPT workspace, so migrate it lazily from the
+// already verified ID token. The value is routing metadata, not a credential.
+func (m *chatGPTAuthManager) AccountID() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.loadLocked() != nil {
+		return ""
+	}
+	if m.cred.AccountID != "" {
+		return m.cred.AccountID
+	}
+	accountID := chatGPTAccountID(m.cred.IDToken)
+	if accountID == "" {
+		accountID = chatGPTAccountID(m.cred.AccessToken)
+	}
+	if accountID != "" {
+		m.cred.AccountID = accountID
+		_ = m.saveLocked()
+	}
+	return accountID
+}
+
+// chatGPTAccountID reads the workspace-routing claim from a JWT payload. Token
+// signatures are verified separately during authorization; this helper is also
+// used after refresh, where the token endpoint is reached over TLS and the
+// extracted value only selects the workspace for that same bearer token.
+func chatGPTAccountID(raw string) string {
+	parts := strings.Split(raw, ".")
+	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
+		return ""
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return ""
+	}
+	var claims struct {
+		Auth struct {
+			AccountID string `json:"chatgpt_account_id"`
+		} `json:"https://api.openai.com/auth"`
+	}
+	if json.Unmarshal(payload, &claims) != nil {
+		return ""
+	}
+	accountID := strings.TrimSpace(claims.Auth.AccountID)
+	if accountID == "" || accountID != claims.Auth.AccountID {
+		return ""
+	}
+	return accountID
+}
+
 func (m *chatGPTAuthManager) refreshLocked(ctx context.Context) error {
 	form := url.Values{
 		"grant_type":    {"refresh_token"},
@@ -182,6 +239,11 @@ func (m *chatGPTAuthManager) refreshLocked(ctx context.Context) error {
 	}
 	if tok.IDToken != "" {
 		m.cred.IDToken = tok.IDToken
+	}
+	if accountID := chatGPTAccountID(m.cred.IDToken); accountID != "" {
+		m.cred.AccountID = accountID
+	} else if accountID := chatGPTAccountID(tok.AccessToken); accountID != "" {
+		m.cred.AccountID = accountID
 	}
 	if tok.TokenType != "" {
 		m.cred.TokenType = tok.TokenType
@@ -499,7 +561,7 @@ func (m *chatGPTAuthManager) finishAuthorization(ctx context.Context, query url.
 		return chatGPTCredential{}, err
 	}
 	m.cred = chatGPTCredential{
-		Email: email, Issuer: issuer, Subject: subject, ClientID: clientID, HostID: hostID,
+		Email: email, Issuer: issuer, Subject: subject, AccountID: chatGPTAccountID(tok.IDToken), ClientID: clientID, HostID: hostID,
 		IDToken: tok.IDToken, AccessToken: tok.AccessToken, RefreshToken: tok.RefreshToken,
 		TokenType: tok.TokenType, Scopes: scopes, SavedAt: now,
 		ExpiresAt: now.Add(time.Duration(max64(tok.ExpiresIn, 3600)) * time.Second),
@@ -510,7 +572,7 @@ func (m *chatGPTAuthManager) finishAuthorization(ctx context.Context, query url.
 	return m.cred, nil
 }
 
-func (m *chatGPTAuthManager) listModels(ctx context.Context) ([]string, error) {
+func (m *chatGPTAuthManager) listModels(ctx context.Context) ([]chatGPTModelOption, error) {
 	token, err := m.AccessToken(ctx)
 	if err != nil {
 		return nil, err
@@ -520,6 +582,9 @@ func (m *chatGPTAuthManager) listModels(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
+	if accountID := m.AccountID(); accountID != "" {
+		req.Header.Set("ChatGPT-Account-Id", accountID)
+	}
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -530,8 +595,9 @@ func (m *chatGPTAuthManager) listModels(ctx context.Context) ([]string, error) {
 	}
 	var payload struct {
 		Models []struct {
-			Slug       string `json:"slug"`
-			Visibility string `json:"visibility"`
+			Slug        string `json:"slug"`
+			DisplayName string `json:"display_name"`
+			Visibility  string `json:"visibility"`
 		} `json:"models"`
 		Data []struct {
 			ID string `json:"id"`
@@ -540,15 +606,24 @@ func (m *chatGPTAuthManager) listModels(ctx context.Context) ([]string, error) {
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&payload); err != nil {
 		return nil, err
 	}
-	var out []string
+	var out []chatGPTModelOption
+	seen := map[string]bool{}
 	for _, model := range payload.Models {
-		if model.Slug != "" && (model.Visibility == "" || model.Visibility == "list") {
-			out = append(out, model.Slug)
+		slug := strings.TrimSpace(model.Slug)
+		if slug != "" && !seen[slug] && (model.Visibility == "" || model.Visibility == "list") {
+			display := strings.TrimSpace(model.DisplayName)
+			if display == "" {
+				display = slug
+			}
+			out = append(out, chatGPTModelOption{Slug: slug, DisplayName: display})
+			seen[slug] = true
 		}
 	}
 	for _, model := range payload.Data {
-		if model.ID != "" {
-			out = append(out, model.ID)
+		slug := strings.TrimSpace(model.ID)
+		if slug != "" && !seen[slug] {
+			out = append(out, chatGPTModelOption{Slug: slug, DisplayName: slug})
+			seen[slug] = true
 		}
 	}
 	return out, nil
@@ -628,7 +703,11 @@ func (s *Server) chatGPTModels(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 502, err.Error())
 		return
 	}
-	writeJSON(w, 200, map[string]any{"models": models})
+	slugs := make([]string, 0, len(models))
+	for _, model := range models {
+		slugs = append(slugs, model.Slug)
+	}
+	writeJSON(w, 200, map[string]any{"models": slugs, "model_options": models})
 }
 
 func (s *Server) chatGPTDisconnect(w http.ResponseWriter, r *http.Request) {

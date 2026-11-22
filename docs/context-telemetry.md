@@ -1,8 +1,8 @@
 # LLM Context Size Telemetry (P3.5 Phase A)
 
-`ARTEX_CONTEXT_TELEMETRY=1` enables opt-in, size-only per-call telemetry for every `llmrec` `Stream` and `Complete` call. It is **disabled by default**: when off, no request sizing runs and no rows are written to PostgreSQL.
+`SOCPUPPET_UI_CONTEXT_TELEMETRY=1` enables opt-in, size-only per-call telemetry for every `llmrec` `Stream` and `Complete` call. It is **disabled by default**: when off, no request sizing runs and no rows are written to PostgreSQL.
 
-This phase measures context composition without changing any prompt, compaction policy, or model behavior, so Phases B (`ARTEX_BOUNDED_CONTEXT`) and C (`ARTEX_CACHE_PREFIX` / `ARTEX_COMPACTION_MEMO`) can be evaluated against real numbers first.
+This phase measures context composition without changing any prompt, compaction policy, or model behavior, so Phases B (`SOCPUPPET_UI_BOUNDED_CONTEXT`) and C (`SOCPUPPET_UI_CACHE_PREFIX` / `SOCPUPPET_UI_COMPACTION_MEMO`) can be evaluated against real numbers first.
 
 ---
 
@@ -10,13 +10,13 @@ This phase measures context composition without changing any prompt, compaction 
 
 | Environment variable | Values | Default |
 |---|---|---|
-| `ARTEX_CONTEXT_TELEMETRY` | `1`, `true`, `on`, `yes` (case-insensitive) | off |
+| `SOCPUPPET_UI_CONTEXT_TELEMETRY` | `1`, `true`, `on`, `yes` (case-insensitive) | off |
 
-Telemetry runs independently of `llm_record` (`recordBodies`): enabling `ARTEX_CONTEXT_TELEMETRY=1` works even when full request/response body recording is disabled, and stores **no prompt, tool, or message content** — only byte lengths, counts, token usage, and metadata.
+Telemetry runs independently of `llm_record` (`recordBodies`): enabling `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` works even when full request/response body recording is disabled, and stores **no prompt, tool, or message content** — only byte lengths, counts, token usage, and metadata.
 
 ### Stopping, retention, and write cost
 
-When `ARTEX_CONTEXT_TELEMETRY=1` is active, each LLM call incurs one lightweight `INSERT` into `llm_context` (~200 bytes/row plus index entries, no bodies), so the table grows by one row per completion call. Unset `ARTEX_CONTEXT_TELEMETRY` (and restart) once the measurement campaign is finished to stop all writes and sizing work, or purge old rows periodically:
+When `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` is active, each LLM call incurs one lightweight `INSERT` into `llm_context` (~200 bytes/row plus index entries, no bodies), so the table grows by one row per completion call. Unset `SOCPUPPET_UI_CONTEXT_TELEMETRY` (and restart) once the measurement campaign is finished to stop all writes and sizing work, or purge old rows periodically:
 
 ```sql
 DELETE FROM llm_context WHERE ts < now() - interval '30 days';
@@ -49,7 +49,7 @@ share(section) = SUM(input_tokens * (section_bytes / total_bytes))
                / SUM(input_tokens)          -- over calls with total_bytes > 0 and input_tokens > 0
 ```
 
-The six partition shares sum to `1.0`. `cache_read_ratio = SUM(cache_read) / NULLIF(SUM(input_tokens), 0)` (in ARTEX/Norma, `input_tokens` already includes cached tokens).
+The six partition shares sum to `1.0`. `cache_read_ratio = SUM(cache_read) / NULLIF(SUM(input_tokens), 0)` (in SOCPUPPET_UI/Norma, `input_tokens` already includes cached tokens).
 
 ---
 
@@ -102,7 +102,7 @@ ORDER BY input_tokens DESC;
 
 ## Phase A Baseline Report & Recommendation on Phases B and C
 
-> **Measurement scope note**: No live production LLM run was executed in this local verification environment. The figures below come from the reproducible representative fixture in `db/llm_context_test.go` (`TestLLMContextRepresentativeFixtureReport`), parameterized from ARTEX's actual `plannerSystem` (~12.5 KiB), `workerSystem` (~11 KiB), tool schema sets (14–16 tools, ~9–10.5 KiB), 5 planner rounds (2 turns each), and 2 worker intents (10 turns each with 3.5–8.5 KiB Bash/tool outputs), combined with a static audit of `agent/planner.go`, `agent/worker.go`, `agent/prompt.go`, and `agent/deferred.go`. Operators should capture 3–5 real tasks with `ARTEX_CONTEXT_TELEMETRY=1` before flipping Phases B or C on by default.
+> **Measurement scope note**: No live production LLM run was executed in this local verification environment. The figures below come from the reproducible representative fixture in `db/llm_context_test.go` (`TestLLMContextRepresentativeFixtureReport`), parameterized from SOCPUPPET_UI's actual `plannerSystem` (~12.5 KiB), `workerSystem` (~11 KiB), tool schema sets (14–16 tools, ~9–10.5 KiB), 5 planner rounds (2 turns each), and 2 worker intents (10 turns each with 3.5–8.5 KiB Bash/tool outputs), combined with a static audit of `agent/planner.go`, `agent/worker.go`, `agent/prompt.go`, and `agent/deferred.go`. Operators should capture 3–5 real tasks with `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` before flipping Phases B or C on by default.
 
 ### Representative Fixture Breakdown
 
@@ -113,13 +113,13 @@ ORDER BY input_tokens DESC;
 
 ### Explicit Recommendations
 
-#### Phase B — Bounded Context (`ARTEX_BOUNDED_CONTEXT`)
+#### Phase B — Bounded Context (`SOCPUPPET_UI_BOUNDED_CONTEXT`)
 - **Recommendation: Proceed (opt-in first), highest ROI on deep `worker` runs.**
 - **Expected gain**: In the representative worker trajectory, `messages_user` accounts for **57.3%** of total input tokens, with **`tool_result` outputs alone representing 46.4%** (and growing quadratically across turns on long Bash/scanner sessions). Bounding/compacting old tool outputs on workers (keeping recent turns verbatim and summarizing/truncating stale `tool_result` payloads) targets the largest single token sink (realistic 25–45% input-token reduction on 10–30 turn workers, and lower p90/p99 latency).
 - **Risk**: Aggressive trimming of earlier tool outputs can drop credentials, endpoints, or exact error lines needed for exploit chaining or evidence binding, and mutating earlier messages inside a live multi-turn session **invalidates the prompt cache prefix** (turning cheap `cache_read` turns into uncached re-prefills if triggered too frequently). Bound only at explicit compaction boundaries or spill large `tool_result` bodies at insertion time before they enter the cached prefix.
 
-#### Phase C — Cache Prefix Stabilization (`ARTEX_CACHE_PREFIX` / `ARTEX_COMPACTION_MEMO`)
-- **Recommendation: Proceed with a surgical `worker` prefix split (`ARTEX_CACHE_PREFIX`); verify `planner` cross-round cache behavior and `ARTEX_COMPACTION_MEMO` with live `ARTEX_CONTEXT_TELEMETRY=1` data before changing them.**
+#### Phase C — Cache Prefix Stabilization (`SOCPUPPET_UI_CACHE_PREFIX` / `SOCPUPPET_UI_COMPACTION_MEMO`)
+- **Recommendation: Proceed with a surgical `worker` prefix split (`SOCPUPPET_UI_CACHE_PREFIX`); verify `planner` cross-round cache behavior and `SOCPUPPET_UI_COMPACTION_MEMO` with live `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` data before changing them.**
 - **Actual system-prompt volatility by lane (built-in prompts)**:
 
   `system_dynamic` is **0.0%** across all lanes today because `agent/deferred.go` sets `DynamicBoundary = 0` (no global deferred MCP) or `len(system)` (everything before the boundary). Auditing the built-in templates and assembly in `agent/worker.go` and `agent/planner.go` shows what actually varies:
@@ -131,18 +131,18 @@ ORDER BY input_tokens DESC;
   | Custom prompts only | — | `{{.Now}}` (`agent/prompt.go:46`, 1-second resolution). Built-in templates do **not** reference `{{.Now}}` (Go's `text/template` ignores the unused `Now` field); it only affects operator-customized prompts that explicitly use `{{.Now}}`. |
 
 - **Expected gain**:
-  - **`worker` turn-1 cache reuse (real, code-backed)**: Today `workerArtifactSpec(runDir)` is concatenated into the single `sysBody` before `noiseProfileBlock`, lessons, constraints, `renderIntentTask(intent)`, and the target-assets block, so every sibling worker spawn busts the prompt cache from `runDir` onward. The minimal `ARTEX_CACHE_PREFIX=1` split shipped in Phase C places the prefix before `workerArtifactSpec(runDir)` (`body` + `untrustedContentTail` + `workerTrafficBlock`) **before** `DynamicBoundary = 1` (`system_static`) and leaves everything from `workerArtifactSpec(runDir)` onward (`workerArtifactSpec(runDir)` + `noiseProfileBlock` + lessons + constraints + `renderIntentTask(intent)` + target assets JSON + closing launch line + `def.FindingGuidance` + `<available-deferred-tools>`) **after** `DynamicBoundary = 1` (`system_dynamic`) in its exact original order. This keeps the visible joined prompt byte-identical and keeps the intent protected from compaction inside `System` while allowing sibling workers in the same task to share the cached `system_static + tools` prefix on turn 1 (in the fixture, `system + tools` is 36.0% of aggregate worker input and ~76.8% of turn-1 input, 21.5 KiB / 28.0 KiB, though the fixture does not isolate the per-intent suffix; measure the exact shareable prefix live). Moving the remaining task-stable blocks (`noiseProfileBlock`, lessons, constraints, `def.FindingGuidance`, `<available-deferred-tools>`) before the boundary would require reordering sections relative to `workerArtifactSpec(runDir)` and is left as a potential future optimization outside this PR.
-  - **`planner` cross-round cache ratio (unverified hypothesis)**: The fixture above assumed a turn-1 cache miss on every planner round (yielding 48.5%), which is **not** demonstrated by the built-in code because `plannerSystem` is stable per task. Real cross-round misses could still happen from provider cache TTL expiry between rounds, constraint edits, or tool-RAG tool-list churn — treat any planner cache gain as a hypothesis to measure with `ARTEX_CONTEXT_TELEMETRY=1` on real tasks rather than a proven savings.
-- **Risk**: Low for the `worker` `ARTEX_CACHE_PREFIX` split (pure boundary split using `norma`'s existing `DynamicBoundary` contract, with zero text reordering; custom prompts using `{{.Now}}` stay an explicit edge case). Medium for `ARTEX_COMPACTION_MEMO` (injecting compaction memos alters model reasoning continuity and only pays off on tasks that repeatedly trigger compaction — verify with live `ARTEX_CONTEXT_TELEMETRY=1` data first).
+  - **`worker` turn-1 cache reuse (real, code-backed)**: Today `workerArtifactSpec(runDir)` is concatenated into the single `sysBody` before `noiseProfileBlock`, lessons, constraints, `renderIntentTask(intent)`, and the target-assets block, so every sibling worker spawn busts the prompt cache from `runDir` onward. The minimal `SOCPUPPET_UI_CACHE_PREFIX=1` split shipped in Phase C places the prefix before `workerArtifactSpec(runDir)` (`body` + `untrustedContentTail` + `workerTrafficBlock`) **before** `DynamicBoundary = 1` (`system_static`) and leaves everything from `workerArtifactSpec(runDir)` onward (`workerArtifactSpec(runDir)` + `noiseProfileBlock` + lessons + constraints + `renderIntentTask(intent)` + target assets JSON + closing launch line + `def.FindingGuidance` + `<available-deferred-tools>`) **after** `DynamicBoundary = 1` (`system_dynamic`) in its exact original order. This keeps the visible joined prompt byte-identical and keeps the intent protected from compaction inside `System` while allowing sibling workers in the same task to share the cached `system_static + tools` prefix on turn 1 (in the fixture, `system + tools` is 36.0% of aggregate worker input and ~76.8% of turn-1 input, 21.5 KiB / 28.0 KiB, though the fixture does not isolate the per-intent suffix; measure the exact shareable prefix live). Moving the remaining task-stable blocks (`noiseProfileBlock`, lessons, constraints, `def.FindingGuidance`, `<available-deferred-tools>`) before the boundary would require reordering sections relative to `workerArtifactSpec(runDir)` and is left as a potential future optimization outside this PR.
+  - **`planner` cross-round cache ratio (unverified hypothesis)**: The fixture above assumed a turn-1 cache miss on every planner round (yielding 48.5%), which is **not** demonstrated by the built-in code because `plannerSystem` is stable per task. Real cross-round misses could still happen from provider cache TTL expiry between rounds, constraint edits, or tool-RAG tool-list churn — treat any planner cache gain as a hypothesis to measure with `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` on real tasks rather than a proven savings.
+- **Risk**: Low for the `worker` `SOCPUPPET_UI_CACHE_PREFIX` split (pure boundary split using `norma`'s existing `DynamicBoundary` contract, with zero text reordering; custom prompts using `{{.Now}}` stay an explicit edge case). Medium for `SOCPUPPET_UI_COMPACTION_MEMO` (injecting compaction memos alters model reasoning continuity and only pays off on tasks that repeatedly trigger compaction — verify with live `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` data first).
 
 ---
 
-## Phase C: Worker Cache Prefix Split (`ARTEX_CACHE_PREFIX=1`)
+## Phase C: Worker Cache Prefix Split (`SOCPUPPET_UI_CACHE_PREFIX=1`)
 
-`ARTEX_CACHE_PREFIX=1` (accepts `1`, `true`, `on`, `yes`, case-insensitive; **off by default**) enables a minimal, zero-reordering system-prompt split for the **`worker`** lane only so sibling workers in the same task share a cacheable static prefix without changing the text visible to the model:
+`SOCPUPPET_UI_CACHE_PREFIX=1` (accepts `1`, `true`, `on`, `yes`, case-insensitive; **off by default**) enables a minimal, zero-reordering system-prompt split for the **`worker`** lane only so sibling workers in the same task share a cacheable static prefix without changing the text visible to the model:
 
 - **Static segment (`System[0]`, before `DynamicBoundary = 1`)**: `body + untrustedContentTail + workerTrafficBlock`.
 - **Dynamic segment (`System[1]`, after `DynamicBoundary = 1`)**: `workerArtifactSpec(runDir) + noiseProfileBlock + lessons + constraints + renderIntentTask(intent) + target assets + launch instruction + FindingGuidance + <available-deferred-tools>` (in exact original order). The leading `"\n\n"` from `workerArtifactSpec` is absorbed because providers join segments with `"\n\n"`, keeping `strings.Join(System, "\n\n")` byte-identical to the legacy unsplit prompt.
-- **Unchanged**: When `ARTEX_CACHE_PREFIX` is unset/false, worker segments and `DynamicBoundary` are byte-identical to the legacy layout. `planner`, `mainagent`, `chat`, and `goals` are completely unchanged regardless of the flag.
+- **Unchanged**: When `SOCPUPPET_UI_CACHE_PREFIX` is unset/false, worker segments and `DynamicBoundary` are byte-identical to the legacy layout. `planner`, `mainagent`, `chat`, and `goals` are completely unchanged regardless of the flag.
 - **Custom prompts caveat**: The split covers only the built-in suffix starting at `workerArtifactSpec(runDir)`. If an operator customizes the `worker` prompt in the database to include `{{.Now}}` (1-second resolution), that timestamp remains inside `System[0]` and will keep the static prefix volatile across spawns.
-- **Measuring live impact**: Enable both `ARTEX_CONTEXT_TELEMETRY=1` and `ARTEX_CACHE_PREFIX=1` on real tasks and compare `system_static` / `system_dynamic` shares and `cache_read_ratio` via `GET /api/llm/context/summary`.
+- **Measuring live impact**: Enable both `SOCPUPPET_UI_CONTEXT_TELEMETRY=1` and `SOCPUPPET_UI_CACHE_PREFIX=1` on real tasks and compare `system_static` / `system_dynamic` shares and `cache_read_ratio` via `GET /api/llm/context/summary`.

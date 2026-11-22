@@ -1,13 +1,13 @@
-# ARTEX architecture (code-level companion)
+# SOCPUPPET_UI architecture (code-level companion)
 
-The README's [Architecture](https://github.com/BaaRai/ARTEX#architecture) section has the
+The README's [Architecture](https://github.com/techpolymath/SOCPUPPET_UI#architecture) section has the
 component diagram and the 10,000-foot view. This document records the code-level map,
 the execution flow and the trust boundaries that are easy to miss when reading the
 packages in isolation.
 
 ## 1. The two graphs
 
-ARTEX keeps two linked graphs, both in PostgreSQL (`db/schema.sql`):
+SOCPUPPET_UI keeps two linked graphs, both in PostgreSQL (`db/schema.sql`):
 
 | Graph | Answers | Main tables | Code |
 | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ numbered migrations from `db/migrations/*.sql`, recording name + SHA-256 in
 
 | Package | Responsibility | Notes |
 | --- | --- | --- |
-| `cmd/artex` | Process entry point | Flags (`-addr`, `-data`, `-proxy`), startup config snapshot, signal handling, graceful drain |
+| `cmd/socpuppet_ui` | Process entry point | Flags (`-addr`, `-data`, `-proxy`), startup config snapshot, signal handling, graceful drain |
 | `config` | Resolve config file + env | `Path`, `Load`, `PostgresDSN`, `SkillDir`, `KeyDir`, `Redact`. Env wins over file |
 | `db` | All persistence | `DB`, `Manager`-independent stores; AES-256-GCM secret columns in `secrets.go` |
 | `agent` | LLM roles and tools | `goals`, `planner`, `worker`, `mainagent`, `retester`; `ToolSet` in `tools.go`; tool catalog in `toolcatalog.go` |
@@ -88,7 +88,7 @@ binary via `server/webui_embed.go` when built with `-tags embedui`.
 
 | Boundary | Implementation |
 | --- | --- |
-| Tool output → model | Norma's untrusted-output boundary: nonce-tagged markers around tool results. On by default; `ARTEX_UNTRUSTED_BOUNDARY=0` disables it. See `agent/untrusted_boundary.go` |
+| Tool output → model | Norma's untrusted-output boundary: nonce-tagged markers around tool results. On by default; `SOCPUPPET_UI_UNTRUSTED_BOUNDARY=0` disables it. See `agent/untrusted_boundary.go` |
 | Command → host | Allow rules match one Bash simple command with the exact prefix: a pipeline, redirection, wrapper (`env`, `sudo`, `xargs`, `find -exec`, a shell `-c`), substitution or expansion does not inherit an allow. Deny and ask rules also inspect every simple command inside wrappers, lists and pipelines. `ArgvPrefixOf` derives the human-readable prefix |
 | URL → network | Target gate + `PinnedDialer` + `RedirectCheck`: scope decisions are re-made against a fresh DNS lookup at dial time, and without a proxy the client connects only to the addresses it compared; with a proxy the pin is name-only |
 | Secrets → disk/log | `db/secrets.go` seals API keys, proxy credentials, MCP env, task credentials and captured auth headers with AES-256-GCM, nonce per value, AAD `table.column`. JWT keys live in `KeyDir()`, never in the browsable data dir. The boot snapshot logs only `config.Redact(dsn)` |

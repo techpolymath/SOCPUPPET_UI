@@ -1,0 +1,25 @@
+[Unit]
+Description=SOCPUPPET_UI application
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=socpuppet_ui
+Group=socpuppet_ui
+WorkingDirectory=/opt/socpuppet_ui
+Environment=SOCPUPPET_UI_JWT_KEY_DIR=/opt/socpuppet_ui/keys
+ExecStart=/opt/socpuppet_ui/socpuppet_ui -addr 127.0.0.1:8787 -proxy 127.0.0.1:8788
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+KillMode=control-group
+UMask=0002
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=socpuppet_ui
+
+[Install]
+WantedBy=multi-user.target

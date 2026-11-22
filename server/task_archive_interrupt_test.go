@@ -12,15 +12,15 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Autumn-27/artex/archivestore"
-	pgdb "github.com/Autumn-27/artex/db"
+	"github.com/techpolymath/SOCPUPPET_UI/archivestore"
+	pgdb "github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // Recreate persisted states at operation boundaries, then run the same recovery
 // functions used at startup. PostgreSQL, files, and HTTP object storage are real
 // isolated fixtures; no production failpoint hooks are needed.
 func TestRemoteArchiveInterruptionRecovery(t *testing.T) {
-	if os.Getenv("ARTEX_PG_DSN") == "" {
+	if os.Getenv("SOCPUPPET_UI_PG_DSN") == "" {
 		t.Skip("requires isolated PostgreSQL")
 	}
 	phases := []string{
@@ -304,7 +304,7 @@ func newRecoveryObjectStore(t *testing.T) (*archivestore.Store, *recoveryObjects
 // Neither a rollback conflict nor a temporary-file cleanup failure may discard
 // the staging journal: recovery must be safe to retry after the obstruction ends.
 func TestArchivePartialRecoveryRetainsJournalOnFailure(t *testing.T) {
-	if os.Getenv("ARTEX_PG_DSN") == "" {
+	if os.Getenv("SOCPUPPET_UI_PG_DSN") == "" {
 		t.Skip("requires isolated PostgreSQL")
 	}
 	for _, failure := range []string{"rollback-conflict", "cleanup-failure"} {

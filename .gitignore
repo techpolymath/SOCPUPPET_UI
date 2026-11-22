@@ -32,13 +32,13 @@ Thumbs.db
 .claude/
 
 # single-binary artifact with embedded frontend
-/artex
+/socpuppet_ui
 # intermediate artifacts left next to the executable by one-click update (staging file / backup / failed version / upgrade marker)
-/artex.new
-/artex.new.sha256
-/artex.old
-/artex.failed
-/artex.upgrade.json
+/socpuppet_ui.new
+/socpuppet_ui.new.sha256
+/socpuppet_ui.old
+/socpuppet_ui.failed
+/socpuppet_ui.upgrade.json
 /server/webui/dist/
 /dist/
 

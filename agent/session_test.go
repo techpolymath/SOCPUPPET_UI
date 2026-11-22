@@ -11,9 +11,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // sessionProbe is a provider that answers every call with one text turn and

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
 )
 
 // Opt-in environment flags for the Linux transparent TCP inbound listener (P4.1b).
@@ -23,11 +23,11 @@ import (
 const (
 	// TransparentTCPEnabledEnv turns on the Linux transparent TCP listener on
 	// DefaultTransparentTCPAddr when set to a truthy value (1/true/yes/on).
-	TransparentTCPEnabledEnv = "ARTEX_TRANSPARENT_TCP_ENABLED"
+	TransparentTCPEnabledEnv = "SOCPUPPET_UI_TRANSPARENT_TCP_ENABLED"
 	// TransparentTCPAddrEnv optionally overrides the IPv4 bind address
 	// (default 127.0.0.1:1081). Setting a non-empty address also enables the
-	// listener unless ARTEX_TRANSPARENT_TCP_ENABLED is explicitly false/0/off/no.
-	TransparentTCPAddrEnv = "ARTEX_TRANSPARENT_TCP_ADDR"
+	// listener unless SOCPUPPET_UI_TRANSPARENT_TCP_ENABLED is explicitly false/0/off/no.
+	TransparentTCPAddrEnv = "SOCPUPPET_UI_TRANSPARENT_TCP_ADDR"
 
 	DefaultTransparentTCPAddr = "127.0.0.1:1081"
 
@@ -76,8 +76,8 @@ type TransparentTCPConfig struct {
 	origDst func(conn net.Conn) (net.IP, int, error)
 }
 
-// TransparentTCPConfigFromEnv parses ARTEX_TRANSPARENT_TCP_ENABLED and
-// ARTEX_TRANSPARENT_TCP_ADDR. Returns (cfg, false) when disabled (default).
+// TransparentTCPConfigFromEnv parses SOCPUPPET_UI_TRANSPARENT_TCP_ENABLED and
+// SOCPUPPET_UI_TRANSPARENT_TCP_ADDR. Returns (cfg, false) when disabled (default).
 func TransparentTCPConfigFromEnv() (TransparentTCPConfig, bool) {
 	rawEnabled := strings.ToLower(strings.TrimSpace(os.Getenv(TransparentTCPEnabledEnv)))
 	rawAddr := strings.TrimSpace(os.Getenv(TransparentTCPAddrEnv))

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 type syntheticTelemetryProvider struct {
@@ -199,9 +199,9 @@ func TestMeasureContextExactSizesAndBoundaryModes(t *testing.T) {
 }
 
 func TestContextTelemetryFlagOffAndOnPostgres(t *testing.T) {
-	dsn := os.Getenv("ARTEX_PG_DSN")
+	dsn := os.Getenv("SOCPUPPET_UI_PG_DSN")
 	if dsn == "" {
-		t.Skip("ARTEX_PG_DSN not set")
+		t.Skip("SOCPUPPET_UI_PG_DSN not set")
 	}
 	pg, err := db.Open(dsn)
 	if err != nil {
@@ -269,7 +269,7 @@ func TestContextTelemetryFlagOffAndOnPostgres(t *testing.T) {
 	// and Complete, with exact byte sizes and zero llm_records rows.
 	t.Setenv(ContextTelemetryEnv, "1")
 	if !ContextTelemetryEnabled() {
-		t.Fatal("expected telemetry enabled when ARTEX_CONTEXT_TELEMETRY=1")
+		t.Fatal("expected telemetry enabled when SOCPUPPET_UI_CONTEXT_TELEMETRY=1")
 	}
 	recOn := Wrap(syntheticTelemetryProvider{usage: wantUsage}, pg, "claude-test", "prof-a", "", "", func() bool { return false })
 	ctxOn := transcript.WithSessionID(WithTaskID(context.Background(), taskOn), "exp2-planner")

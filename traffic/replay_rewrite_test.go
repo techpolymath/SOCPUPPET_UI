@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic/rewrite"
 	mproxy "github.com/lqqyt2423/go-mitmproxy/proxy"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 )
 
 func hasNonceHeader(h http.Header) bool {

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
 )
 
 func TestManagerSOCKS5OptInFlagAndAssetBlockRuleRefusal(t *testing.T) {
@@ -30,7 +30,7 @@ func TestManagerSOCKS5OptInFlagAndAssetBlockRuleRefusal(t *testing.T) {
 		t.Fatalf("SOCKS5Addr with flag off = %q, want empty", got)
 	}
 
-	// 2. Flag on (ARTEX_SOCKS5_ADDR=127.0.0.1:0): listener starts and enforces
+	// 2. Flag on (SOCPUPPET_UI_SOCKS5_ADDR=127.0.0.1:0): listener starts and enforces
 	// global asset block rules via m.interceptor.DialSOCKS5 BEFORE dialing.
 	t.Setenv(traffic.SOCKS5AddrEnv, "127.0.0.1:0")
 	mOn, err := NewManager(t.TempDir(), "127.0.0.1:0")
@@ -40,7 +40,7 @@ func TestManagerSOCKS5OptInFlagAndAssetBlockRuleRefusal(t *testing.T) {
 	t.Cleanup(func() { _ = mOn.Close() })
 	socksAddr := mOn.traffic.SOCKS5Addr()
 	if socksAddr == "" {
-		t.Fatal("expected SOCKS5 listener when ARTEX_SOCKS5_ADDR is set")
+		t.Fatal("expected SOCKS5 listener when SOCPUPPET_UI_SOCKS5_ADDR is set")
 	}
 
 	// Add a global asset block rule for 127.0.0.1 and ensure cleanup.

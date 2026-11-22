@@ -13,7 +13,7 @@ import (
 
 // Sealing the server environment. ScrubSecretEnv removes the secrets from the Go
 // environment, but the kernel keeps the environment block the process was executed
-// with: /proc/<pid>/environ still shows ARTEX_PG_DSN, ARTEX_SECRET_KEY and the API
+// with: /proc/<pid>/environ still shows SOCPUPPET_UI_PG_DSN, SOCPUPPET_UI_SECRET_KEY and the API
 // keys to any process that can read it. SealProcessEnv re-executes the server once,
 // with those variables left out of the block; the values travel to the new image
 // through an inherited pipe and are put back into the Go environment there, so the
@@ -24,7 +24,7 @@ import (
 
 // sealFDEnv names the inherited descriptor that carries the sealed values. It is set
 // only for the re-executed image and removed as soon as that image reads it.
-const sealFDEnv = "ARTEX_SEALED_FD"
+const sealFDEnv = "SOCPUPPET_UI_SEALED_FD"
 
 // sealMaxPayload keeps the handoff well inside a pipe buffer (64 KiB on Linux), so the
 // write before the exec never blocks. The secrets are a few hundred bytes in practice.
@@ -75,7 +75,7 @@ func restoreSealedEnv(raw string) error {
 	if err != nil || fd < 0 {
 		return fmt.Errorf("bad descriptor %q", raw)
 	}
-	f := os.NewFile(uintptr(fd), "artex-sealed-env")
+	f := os.NewFile(uintptr(fd), "socpuppet_ui-sealed-env")
 	data, err := io.ReadAll(f)
 	f.Close()
 	if err != nil {

@@ -149,7 +149,7 @@ func TestLLMModelsListsThroughNAT64Address(t *testing.T) {
 	}
 }
 
-// An endpoint listed in ARTEX_LLM_PRIVATE_ENDPOINTS gets, behind a NAT64 or
+// An endpoint listed in SOCPUPPET_UI_LLM_PRIVATE_ENDPOINTS gets, behind a NAT64 or
 // 6to4 address, what it gets as a bare IPv4 address: private, loopback and
 // shared ranges are allowed, link-local, metadata and reserved ones never.
 func TestLLMModelsPrivateEndpointListCoversEmbeddedIPv4(t *testing.T) {

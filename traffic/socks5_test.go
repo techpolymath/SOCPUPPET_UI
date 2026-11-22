@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 func startEchoServer(t *testing.T, network, addr string) (net.Listener, *atomic.Int32) {
@@ -209,7 +209,7 @@ func TestSOCKS5FlagOffMeansNoListener(t *testing.T) {
 	t.Setenv(SOCKS5EnabledEnv, "0")
 	t.Setenv(SOCKS5AddrEnv, "127.0.0.1:1080")
 	if _, ok := SOCKS5ConfigFromEnv(); ok {
-		t.Fatalf("explicit ARTEX_SOCKS5_ENABLED=0 must stay disabled even when addr is set")
+		t.Fatalf("explicit SOCPUPPET_UI_SOCKS5_ENABLED=0 must stay disabled even when addr is set")
 	}
 	t.Setenv(SOCKS5EnabledEnv, "1")
 	t.Setenv(SOCKS5AddrEnv, "")

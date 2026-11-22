@@ -43,20 +43,20 @@ type Store struct {
 // FromEnv returns nil for the default local backend. A configured but invalid
 // backend is an error, never a silent fallback to the machine's local disk.
 func FromEnv() (*Store, error) {
-	switch os.Getenv("ARTEX_ARCHIVE_STORAGE") {
+	switch os.Getenv("SOCPUPPET_UI_ARCHIVE_STORAGE") {
 	case "", "local":
 		return nil, nil
 	case "s3":
 		return New(Config{
-			Endpoint: os.Getenv("ARTEX_ARCHIVE_S3_ENDPOINT"), Region: os.Getenv("ARTEX_ARCHIVE_S3_REGION"),
-			Bucket: os.Getenv("ARTEX_ARCHIVE_S3_BUCKET"), Prefix: os.Getenv("ARTEX_ARCHIVE_S3_PREFIX"),
-			AccessKey: os.Getenv("ARTEX_ARCHIVE_S3_ACCESS_KEY_ID"), SecretKey: os.Getenv("ARTEX_ARCHIVE_S3_SECRET_ACCESS_KEY"),
-			PathStyle:    os.Getenv("ARTEX_ARCHIVE_S3_PATH_STYLE") == "true",
-			SessionToken: os.Getenv("ARTEX_ARCHIVE_S3_SESSION_TOKEN"),
-			SSE:          os.Getenv("ARTEX_ARCHIVE_S3_SSE"), KMSKeyID: os.Getenv("ARTEX_ARCHIVE_S3_KMS_KEY_ID"),
+			Endpoint: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_ENDPOINT"), Region: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_REGION"),
+			Bucket: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_BUCKET"), Prefix: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_PREFIX"),
+			AccessKey: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_ACCESS_KEY_ID"), SecretKey: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_SECRET_ACCESS_KEY"),
+			PathStyle:    os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_PATH_STYLE") == "true",
+			SessionToken: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_SESSION_TOKEN"),
+			SSE:          os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_SSE"), KMSKeyID: os.Getenv("SOCPUPPET_UI_ARCHIVE_S3_KMS_KEY_ID"),
 		})
 	default:
-		return nil, errors.New("ARTEX_ARCHIVE_STORAGE must be local or s3")
+		return nil, errors.New("SOCPUPPET_UI_ARCHIVE_STORAGE must be local or s3")
 	}
 }
 
@@ -75,7 +75,7 @@ func New(c Config) (*Store, error) {
 	}
 	c.Prefix = strings.Trim(c.Prefix, "/")
 	if c.Prefix == "" {
-		c.Prefix = "artex/tasks"
+		c.Prefix = "socpuppet_ui/tasks"
 	}
 	if path.Clean(c.Prefix) != c.Prefix || strings.Contains(c.Prefix, "..") || strings.ContainsAny(c.Prefix, "\\?#") {
 		return nil, errors.New("invalid archive S3 prefix")

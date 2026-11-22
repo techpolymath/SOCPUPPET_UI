@@ -12,14 +12,14 @@ import (
 	"time"
 )
 
-// The update check is opt-in: only ARTEX_UPDATE_CHECK=1 (or true/on/yes) lets
-// the backend ask the public GitHub releases API for the latest upstream ARTEX tag.
+// The update check is opt-in: only SOCPUPPET_UI_UPDATE_CHECK=1 (or true/on/yes) lets
+// the backend ask the public GitHub releases API for the latest upstream SOCPUPPET_UI tag.
 // Unset, it makes no request at all and the UI shows no banner.
-const updateCheckURL = "https://api.github.com/repos/BaaRai/ARTEX/releases/latest"
+const updateCheckURL = "https://api.github.com/repos/techpolymath/SOCPUPPET_UI/releases/latest"
 const updateCheckInterval = 24 * time.Hour
 
 func updateCheckEnabled() bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("ARTEX_UPDATE_CHECK"))) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("SOCPUPPET_UI_UPDATE_CHECK"))) {
 	case "1", "true", "on", "yes":
 		return true
 	}

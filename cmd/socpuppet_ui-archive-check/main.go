@@ -1,4 +1,4 @@
-// artex-archive-check tests the configured object store without touching tasks.
+// socpuppet_ui-archive-check tests the configured object store without touching tasks.
 package main
 
 import (
@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Autumn-27/artex/archivestore"
+	"github.com/techpolymath/SOCPUPPET_UI/archivestore"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func check() error {
 	if s == nil {
 		return fmt.Errorf("S3 archive storage is not configured")
 	}
-	dir, err := os.MkdirTemp("", "artex-archive-check-")
+	dir, err := os.MkdirTemp("", "socpuppet_ui-archive-check-")
 	if err != nil {
 		return err
 	}

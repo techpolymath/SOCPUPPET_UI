@@ -29,7 +29,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { t } from "@/i18n";
 import { api } from "@/lib/api";
 import { setVisibleInterval } from "@/lib/polling";
-import type { ChatGPTConnectionStatus, LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
+import type {
+  ChatGPTConnectionStatus,
+  ChatGPTModelOption,
+  LLMPoolMember,
+  LLMPoolStatus,
+  LLMProfile,
+  LLMRetryOverride,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { ProfileRetryFields, RetryPolicyPanel, ZERO_OVERRIDE } from "./_components/retry";
@@ -419,7 +426,10 @@ function ProfileSheet({
     setModels([]);
     setModelQuery("");
     try {
-      const loaded = format === "chatgpt" ? await api.chatGPTModels() : (await api.fetchLLMModels(format, baseUrl, apiKey, proxy, profileId)).models ?? [];
+      const loaded =
+        format === "chatgpt"
+          ? (await api.chatGPTModels()).map((option) => option.slug)
+          : ((await api.fetchLLMModels(format, baseUrl, apiKey, proxy, profileId)).models ?? []);
       if (loaded.length > 0) {
         setModels(loaded);
         setModelsOpen(true);
@@ -921,6 +931,11 @@ export default function LLMPage() {
   const [pool, setPool] = React.useState<LLMPoolStatus | null>(null);
   const [poolOpen, setPoolOpen] = React.useState(false);
   const [chatGPT, setChatGPT] = React.useState<ChatGPTConnectionStatus | null>(null);
+  const [chatGPTModels, setChatGPTModels] = React.useState<ChatGPTModelOption[]>([]);
+  const [chatGPTModel, setChatGPTModel] = React.useState("");
+  const [chatGPTModelsLoading, setChatGPTModelsLoading] = React.useState(false);
+  const [chatGPTModelSaving, setChatGPTModelSaving] = React.useState(false);
+  const [chatGPTModelsError, setChatGPTModelsError] = React.useState("");
   // The drawer's open flag and its content are stored separately: editing stays put on close, otherwise during the closing animation the title would flash
   // from "Edit X" to "New". editing = null means create.
   const [editOpen, setEditOpen] = React.useState(false);
@@ -955,6 +970,45 @@ export default function LLMPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  const loadChatGPTModels = React.useCallback(
+    async (showSuccess = false) => {
+      if (chatGPTModelsLoading) return;
+      setChatGPTModelsLoading(true);
+      setChatGPTModelsError("");
+      try {
+        const options = await api.chatGPTModels();
+        setChatGPTModels(options);
+        if (options.length === 0)
+          setChatGPTModelsError(t("The signed-in ChatGPT account returned no selectable models."));
+        const saved =
+          profiles.find((p) => p.format === "chatgpt" && p.is_default) ?? profiles.find((p) => p.format === "chatgpt");
+        setChatGPTModel((current) => {
+          if (options.some((option) => option.slug === current)) return current;
+          if (saved && options.some((option) => option.slug === saved.model)) return saved.model;
+          return options[0]?.slug ?? "";
+        });
+        if (showSuccess) toast.success(t("Loaded {count} ChatGPT models", { count: options.length }));
+      } catch (e) {
+        const message = (e as Error).message;
+        setChatGPTModelsError(message);
+        if (showSuccess) toast.error(t("Failed to load ChatGPT models: {error}", { error: message }));
+      } finally {
+        setChatGPTModelsLoading(false);
+      }
+    },
+    [chatGPTModelsLoading, profiles],
+  );
+
+  React.useEffect(() => {
+    if (!chatGPT?.connected) {
+      setChatGPTModels([]);
+      setChatGPTModel("");
+      setChatGPTModelsError("");
+      return;
+    }
+    if (chatGPTModels.length === 0 && !chatGPTModelsLoading && !chatGPTModelsError) void loadChatGPTModels();
+  }, [chatGPT?.connected, chatGPTModels.length, chatGPTModelsError, chatGPTModelsLoading, loadChatGPTModels]);
 
   // The health badge on each card reads pool state by profile id.
   const health = React.useMemo(() => {
@@ -997,6 +1051,43 @@ export default function LLMPage() {
     }
   }
 
+  async function activateChatGPTModel() {
+    if (!chatGPTModel || chatGPTModelSaving) return;
+    setChatGPTModelSaving(true);
+    try {
+      const existing =
+        profiles.find((p) => p.format === "chatgpt" && p.is_default) ?? profiles.find((p) => p.format === "chatgpt");
+      const { id } = await api.saveLLMProfile({
+        ...(existing ? { id: Number(existing.id) } : {}),
+        name: existing?.name ?? "ChatGPT account",
+        format: "chatgpt",
+        model: chatGPTModel,
+        base_url: "https://api.openai.com/v1",
+        proxy: existing?.proxy ?? "",
+        rate_per_second: existing?.rate_per_second ?? 0,
+        rate_per_minute: existing?.rate_per_minute ?? 0,
+        context_window_k: existing?.context_window_k ?? 0,
+        thinking_type: existing?.thinking_type ?? "",
+        reasoning_effort: existing?.reasoning_effort ?? "",
+        priority: existing?.priority ?? 0,
+        pool_exclude: existing?.pool_exclude ?? false,
+        streaming: true,
+        max_tokens: 0,
+        max_tokens_field: "",
+        session_header_key: existing?.session_header_key ?? "",
+        user_agent: existing?.user_agent ?? "",
+        retry: existing?.retry ?? ZERO_OVERRIDE,
+      });
+      await api.activateLLMProfile(String(id));
+      toast.success(t("ChatGPT model activated: {model}", { model: chatGPTModel }));
+      await load();
+    } catch (e) {
+      toast.error(t("Failed to activate ChatGPT model: {error}", { error: (e as Error).message }));
+    } finally {
+      setChatGPTModelSaving(false);
+    }
+  }
+
   const poolOn = pool?.enabled ?? false;
 
   return (
@@ -1026,32 +1117,101 @@ export default function LLMPage() {
       </div>
 
       <Card className="gap-3 py-4">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 px-4">
-          <div className="grid gap-1">
-            <div className="flex items-center gap-2 font-medium">
-              {t("ChatGPT plan")}
-              <Badge variant="outline" className={chatGPT?.connected ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>
-                {chatGPT?.connected ? t("Connected") : t("Not connected")}
-              </Badge>
+        <CardContent className="grid gap-4 px-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="grid gap-1">
+              <div className="flex items-center gap-2 font-medium">
+                {t("ChatGPT plan")}
+                <Badge
+                  variant="outline"
+                  className={
+                    chatGPT?.connected
+                      ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400"
+                      : "text-muted-foreground"
+                  }
+                >
+                  {chatGPT?.connected ? t("Connected") : t("Not connected")}
+                </Badge>
+              </div>
+              <p className="text-muted-foreground text-sm">
+                {chatGPT?.connected
+                  ? t(
+                      "Signed in as {email}. Requests from ChatGPT profiles use your plan allowance instead of an API key.",
+                      { email: chatGPT.email ?? t("ChatGPT account") },
+                    )
+                  : t("Use your ChatGPT account and plan allowance without storing an OpenAI API key.")}
+              </p>
             </div>
-            <p className="text-muted-foreground text-sm">
-              {chatGPT?.connected
-                ? t("Signed in as {email}. Requests from ChatGPT profiles use your plan allowance instead of an API key.", { email: chatGPT.email ?? t("ChatGPT account") })
-                : t("Use your ChatGPT account and plan allowance without storing an OpenAI API key.")}
-            </p>
+            <div className="flex items-center gap-2">
+              {chatGPT?.connected && chatGPT.manage_url && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={chatGPT.manage_url} target="_blank" rel="noreferrer">
+                    {t("Manage usage")}
+                  </a>
+                </Button>
+              )}
+              {chatGPT?.connected ? (
+                <Button size="sm" variant="outline" onClick={() => void disconnectChatGPT()}>
+                  {t("Disconnect")}
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => window.location.assign("/api/chatgpt/connect")}>
+                  {t("Continue with ChatGPT")}
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {chatGPT?.connected && chatGPT.manage_url && (
-              <Button size="sm" variant="outline" asChild>
-                <a href={chatGPT.manage_url} target="_blank" rel="noreferrer">{t("Manage usage")}</a>
-              </Button>
-            )}
-            {chatGPT?.connected ? (
-              <Button size="sm" variant="outline" onClick={() => void disconnectChatGPT()}>{t("Disconnect")}</Button>
-            ) : (
-              <Button size="sm" onClick={() => window.location.assign("/api/chatgpt/connect")}>{t("Continue with ChatGPT")}</Button>
-            )}
-          </div>
+
+          {chatGPT?.connected && (
+            <div className="grid gap-2 border-t pt-4">
+              <Label htmlFor="chatgpt-model">{t("ChatGPT model")}</Label>
+              <div className="flex flex-wrap gap-2">
+                <Select value={chatGPTModel} onValueChange={setChatGPTModel} disabled={chatGPTModelsLoading}>
+                  <SelectTrigger id="chatgpt-model" className="min-w-64 flex-1">
+                    <SelectValue
+                      placeholder={chatGPTModelsLoading ? t("Loading available models…") : t("Select a model")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    {chatGPTModels.map((option) => (
+                      <SelectItem key={option.slug} value={option.slug}>
+                        <span>{option.display_name}</span>
+                        <code className="ml-2 text-muted-foreground text-xs">{option.slug}</code>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={chatGPTModelsLoading}
+                  onClick={() => void loadChatGPTModels(true)}
+                >
+                  <RefreshCwIcon className={chatGPTModelsLoading ? "animate-spin" : ""} />
+                  {t("Refresh models")}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!chatGPTModel || chatGPTModelSaving}
+                  onClick={() => void activateChatGPTModel()}
+                >
+                  {chatGPTModelSaving ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
+                  {t("Use and activate")}
+                </Button>
+              </div>
+              {chatGPTModelsError && <p className="text-destructive text-xs">{chatGPTModelsError}</p>}
+              <p className="text-muted-foreground text-xs">
+                {t(
+                  "This list comes from the signed-in ChatGPT account. Using and activating a model creates or updates a ChatGPT profile and switches SOCPuppet away from the current API-key profile.",
+                )}
+              </p>
+              <p className="text-amber-600 text-xs dark:text-amber-400">
+                {t(
+                  "Daybreak approval on an OpenAI API organization/project is separate from ChatGPT plan access and does not automatically transfer to this OAuth connection.",
+                )}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic"
 )
 
 func TestManagerSOCKS5UDPOptInAndAssetBlockRuleDropsDatagram(t *testing.T) {
@@ -36,7 +36,7 @@ func TestManagerSOCKS5UDPOptInAndAssetBlockRuleDropsDatagram(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = mTCPOnly.Close() })
 	if mTCPOnly.traffic.SOCKS5UDPEnabled() {
-		t.Fatal("expected UDP disabled when ARTEX_SOCKS5_UDP_ENABLED is unset")
+		t.Fatal("expected UDP disabled when SOCPUPPET_UI_SOCKS5_UDP_ENABLED is unset")
 	}
 
 	// 3. UDP flag on: listener accepts UDP ASSOCIATE and enforces global asset

@@ -75,7 +75,7 @@ import {
 import { setVisibleInterval } from "@/lib/polling";
 import { t } from "@/i18n";
 
-const FINDING_LIST_PREFERENCE_KEY = "artex_finding_list_preferences";
+const FINDING_LIST_PREFERENCE_KEY = "socpuppet_ui_finding_list_preferences";
 
 // List views: flat = one big cross-task table (default); grouped = collapsible groups by task;
 // asset = left asset tree + the findings under that subtree on the right.

@@ -31,11 +31,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic/rewrite"
 	"github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
 	mproxy "github.com/lqqyt2423/go-mitmproxy/proxy"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/traffic/rewrite"
 	_ "modernc.org/sqlite"
 )
 
@@ -275,7 +275,7 @@ type Traffic struct {
 	// whole by SetRewriteRules and applied by the sink (rewrite_flow.go).
 	rewriteRules atomic.Pointer[rewrite.Set]
 	// tamperHooks is the compiled snapshot of enabled Go tampering hooks (P4.2),
-	// replaced by SetTamperHooks. Nil when ARTEX_TAMPER_HOOKS_ENABLED is off or
+	// replaced by SetTamperHooks. Nil when SOCPUPPET_UI_TAMPER_HOOKS_ENABLED is off or
 	// no hooks are enabled.
 	tamperHooks atomic.Pointer[HookSet]
 	// snaps keeps the original of each request a rule rewrote until its

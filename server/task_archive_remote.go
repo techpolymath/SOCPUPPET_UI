@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	pgdb "github.com/Autumn-27/artex/db"
+	pgdb "github.com/techpolymath/SOCPUPPET_UI/db"
 )
 
 // An outbox bridges the local PostgreSQL transaction and object storage. Never

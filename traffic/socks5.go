@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
 )
 
 // Opt-in environment flags for the SOCKS5 inbound listener (P4.1a).
@@ -26,18 +26,18 @@ import (
 const (
 	// SOCKS5EnabledEnv turns on the SOCKS5 CONNECT listener on DefaultSOCKS5Addr
 	// (loopback) when set to 1/true/on/yes.
-	SOCKS5EnabledEnv = "ARTEX_SOCKS5_ENABLED"
+	SOCKS5EnabledEnv = "SOCPUPPET_UI_SOCKS5_ENABLED"
 	// SOCKS5AddrEnv optionally overrides the bind address (default 127.0.0.1:1080).
 	// Setting a non-empty address also enables the listener unless
-	// ARTEX_SOCKS5_ENABLED is explicitly false/0/off/no.
-	SOCKS5AddrEnv = "ARTEX_SOCKS5_ADDR"
+	// SOCPUPPET_UI_SOCKS5_ENABLED is explicitly false/0/off/no.
+	SOCKS5AddrEnv = "SOCPUPPET_UI_SOCKS5_ADDR"
 	// SOCKS5UDPEnabledEnv turns on RFC 1928 UDP ASSOCIATE (IPv4 first) on the
 	// SOCKS5 listener when set to 1/true/on/yes. Off by default: when off,
 	// UDP ASSOCIATE is refused with reply 0x07 and no UDP relay socket is opened.
-	// Setting ARTEX_SOCKS5_UDP_ENABLED=1 also enables the SOCKS5 listener on
-	// ARTEX_SOCKS5_ADDR (or DefaultSOCKS5Addr) unless ARTEX_SOCKS5_ENABLED is
+	// Setting SOCPUPPET_UI_SOCKS5_UDP_ENABLED=1 also enables the SOCKS5 listener on
+	// SOCPUPPET_UI_SOCKS5_ADDR (or DefaultSOCKS5Addr) unless SOCPUPPET_UI_SOCKS5_ENABLED is
 	// explicitly false/0/off/no.
-	SOCKS5UDPEnabledEnv = "ARTEX_SOCKS5_UDP_ENABLED"
+	SOCKS5UDPEnabledEnv = "SOCPUPPET_UI_SOCKS5_UDP_ENABLED"
 
 	DefaultSOCKS5Addr               = "127.0.0.1:1080"
 	DefaultSOCKS5MaxConcurrent      = 64
@@ -143,8 +143,8 @@ type RawTCPCapture struct {
 	Paced     bool
 }
 
-// SOCKS5ConfigFromEnv parses ARTEX_SOCKS5_ENABLED, ARTEX_SOCKS5_ADDR, and
-// ARTEX_SOCKS5_UDP_ENABLED. Returns (cfg, false) when disabled (the default).
+// SOCKS5ConfigFromEnv parses SOCPUPPET_UI_SOCKS5_ENABLED, SOCPUPPET_UI_SOCKS5_ADDR, and
+// SOCPUPPET_UI_SOCKS5_UDP_ENABLED. Returns (cfg, false) when disabled (the default).
 func SOCKS5ConfigFromEnv() (SOCKS5Config, bool) {
 	rawEnabled := strings.ToLower(strings.TrimSpace(os.Getenv(SOCKS5EnabledEnv)))
 	rawAddr := strings.TrimSpace(os.Getenv(SOCKS5AddrEnv))

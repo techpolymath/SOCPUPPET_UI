@@ -1,4 +1,4 @@
--- Opt-in per-call LLM context size telemetry (ARTEX_CONTEXT_TELEMETRY=1).
+-- Opt-in per-call LLM context size telemetry (SOCPUPPET_UI_CONTEXT_TELEMETRY=1).
 -- Records only byte sizes, counts, token usage, and metadata — never any
 -- prompt, tool, or message content.
 CREATE TABLE IF NOT EXISTS llm_context (

@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/egress"
-	"github.com/Autumn-27/artex/guard"
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/notify"
 	"github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/egress"
+	"github.com/techpolymath/SOCPUPPET_UI/guard"
+	"github.com/techpolymath/SOCPUPPET_UI/intercept"
+	"github.com/techpolymath/SOCPUPPET_UI/notify"
 )
 
 // This file implements the custom tool executor (docs/custom-tool-design.md). tools rows

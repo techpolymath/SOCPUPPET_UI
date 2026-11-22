@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/llmpool"
-	"github.com/Autumn-27/artex/llmrec"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
+	"github.com/techpolymath/SOCPUPPET_UI/agent"
+	"github.com/techpolymath/SOCPUPPET_UI/db"
+	"github.com/techpolymath/SOCPUPPET_UI/llmpool"
+	"github.com/techpolymath/SOCPUPPET_UI/llmrec"
 )
 
 type taskAgentBundle struct {
@@ -656,6 +656,9 @@ func isRetryableStreamError(err error) bool {
 		return false
 	}
 	if isQuotaExhaustedError(err) {
+		return false
+	}
+	if isDeterministicModelRejection(err) {
 		return false
 	}
 	s := strings.ToLower(err.Error())
