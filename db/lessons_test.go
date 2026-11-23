@@ -48,8 +48,8 @@ func TestRenderLessonsDataNotInstructions(t *testing.T) {
 }
 
 func TestLessonTextDoesNotSplitUTF8(t *testing.T) {
-	// 60 CJK runes, 180 bytes. The old cut was s[:limit] in bytes.
-	in := strings.Repeat("验", 60)
+	// 60 multibyte runes. The old cut was s[:limit] in bytes.
+	in := strings.Repeat("é", 60)
 	got := lessonText(in, 20)
 	if !utf8.ValidString(got) {
 		t.Fatalf("truncated lesson text is not valid UTF-8: %q", got)
@@ -81,8 +81,8 @@ func TestRenderLessonsCapsRunesNotBytes(t *testing.T) {
 	// 1800 renders nothing. A rune cap still fits one lesson.
 	lesson := Lesson{
 		ID: 1, Kind: "positive", Support: 1,
-		Cue:    strings.Repeat("𠀋", 160),
-		Action: strings.Repeat("𠀋", 320),
+		Cue:    strings.Repeat("🧪", 160),
+		Action: strings.Repeat("🧪", 320),
 	}
 	block, ids := RenderLessons([]Lesson{lesson}, 1800)
 	if block == "" || len(ids) != 1 || ids[0] != 1 {

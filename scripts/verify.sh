@@ -63,9 +63,11 @@ require_cmd() {
 want_go() { [ "$WEB_ONLY" -eq 0 ]; }
 want_web() { [ "$GO_ONLY" -eq 0 ]; }
 
+require_cmd git
+run_step "English-only source" bash scripts/check-no-han.sh
+
 if want_go; then
   require_cmd go
-  require_cmd git
 
   want=$(awk '/^go /{print $2; exit}' go.mod)
   got=$(go env GOVERSION | sed 's/^go//')
@@ -142,6 +144,7 @@ if [ "$GO_ONLY" -eq 0 ] && [ "$WEB_ONLY" -eq 0 ]; then
   if command -v shellcheck >/dev/null 2>&1; then
     run_step "shellcheck" shellcheck -S warning \
       install.sh update.sh start.sh scripts/backup.sh scripts/verify.sh \
+      scripts/check-no-han.sh \
       reset-password.sh scripts/extract-changelog-section.sh \
       scripts/test-extract-changelog-section.sh .github/scripts/bot.sh \
       scripts/test-bot-context.sh

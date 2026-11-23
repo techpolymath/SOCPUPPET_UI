@@ -99,6 +99,30 @@ func TestToolRAGCoreKeptAndKRespected(t *testing.T) {
 	}
 }
 
+func TestToolRAGKeepsBoundTaskControlsForFollowups(t *testing.T) {
+	controls := []string{"list_tasks", "list_llm_profiles", "spawn_task", "pause_task", "get_task_graph", "list_task_findings"}
+	in := ragCatalog(25)
+	for _, name := range controls {
+		in = append(in, ragTool(name, "Manage assessment tasks"))
+	}
+	for _, query := range []string{"Continue.", "Ok. begin scanning."} {
+		out, projected, err := projectTools(query, in, toolRAGKeep(nil), 1, bm25Score)
+		if err != nil || !projected {
+			t.Fatalf("query=%q: projected=%v err=%v", query, projected, err)
+		}
+		for _, name := range controls {
+			if !slices.Contains(ragNames(out), name) {
+				t.Fatalf("query=%q: task control %s hidden", query, name)
+			}
+		}
+	}
+	// Keeping an orchestration tool must never inject an unavailable tool.
+	out, _, err := projectTools("Continue.", ragCatalog(25), toolRAGKeep(nil), 1, bm25Score)
+	if err != nil || slices.Contains(ragNames(out), "spawn_task") {
+		t.Fatalf("unavailable spawn_task injected: %v err=%v", ragNames(out), err)
+	}
+}
+
 // The projection runs after ToolResolve, so a tool the binding/enabled filter
 // dropped is never selected even when it is the best lexical match.
 func TestToolRAGNeverSelectsUnboundOrDisabled(t *testing.T) {

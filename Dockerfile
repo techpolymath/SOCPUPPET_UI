@@ -29,6 +29,7 @@ RUN npm run build:static
 FROM --platform=$BUILDPLATFORM golang:1.26.11-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./
+COPY third_party/go-mitmproxy/go.mod ./third_party/go-mitmproxy/go.mod
 RUN go mod download
 COPY . .
 # Reuse the frontend built above; build.sh skips its own frontend step.

@@ -1122,11 +1122,11 @@ ALTER TABLE intercept_pending ADD COLUMN IF NOT EXISTS decision_source TEXT NOT 
 UPDATE intercept_pending SET decision_source=CASE WHEN rule_id IS NOT NULL THEN 'rule'
  WHEN reason LIKE '[Model]%' THEN 'model' ELSE 'unknown' END WHERE decision_source='';
 -- Judge decisions were stored as 'unknown' because the readers expected a capitalized
--- prefix while the judge wrote '[model]' (and '[模型]' before e233c02). Idempotent:
+-- prefix while the judge wrote '[model]'. Idempotent:
 -- once corrected no row matches the WHERE clause again.
 UPDATE intercept_pending SET decision_source='model'
  WHERE decision_source='unknown' AND rule_id IS NULL
-   AND (reason LIKE '[model]%' OR reason LIKE '[模型]%');
+   AND reason LIKE '[model]%';
 -- Actor that settled the request: '' (pending, or decided before this column
 -- existed) | human | rule | model | system. No backfill: readers fall back to
 -- decision_source for legacy rows instead of rewriting history.

@@ -1,6 +1,30 @@
 package traffic
 
-import "testing"
+import (
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+)
+
+func TestProxyLandingResponseIsEnglish(t *testing.T) {
+	_, _, proxyURL := startProxy(t)
+	resp, err := http.Get(proxyURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusBadRequest)
+	}
+	if got := strings.TrimSpace(string(body)); got != proxyLandingMessage {
+		t.Fatalf("body = %q, want %q", got, proxyLandingMessage)
+	}
+}
 
 func TestValidateProxyURL(t *testing.T) {
 	ok := []string{

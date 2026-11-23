@@ -31,6 +31,10 @@ var toolRAGCore = map[string]bool{
 	"record_fact": true, "insert_assets": true, "report_finding": true, "list_findings": true,
 	"graph_overview": true, "node_detail": true, "add_intent": true, "steer_work": true,
 	"ask_operator": true, "prove_goal": true, "goal_met": true, "list_assets": true,
+	// Orchestrators need task controls even for short follow-ups such as
+	// "Continue". Visibility and enabled checks still run before this keep set.
+	"list_tasks": true, "list_llm_profiles": true, "spawn_task": true,
+	"pause_task": true, "get_task_graph": true, "list_task_findings": true,
 }
 
 type toolQueryKey struct{}

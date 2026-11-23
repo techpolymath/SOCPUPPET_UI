@@ -488,7 +488,8 @@ func TestFindingTrafficUTF8SegmentsAndInheritedWrites(t *testing.T) {
 }
 
 func TestFindingsZipLongNonASCIINameStaysUTF8(t *testing.T) {
-	f := &db.DBFinding{ID: 7, Severity: "high", Name: strings.Repeat("跨站脚本", 12)}
+	const namePart = "cross-site-scripting-évidence"
+	f := &db.DBFinding{ID: 7, Severity: "high", Name: strings.Repeat(namePart, 12)}
 	var buf bytes.Buffer
 	if err := writeFindingsEvidenceZip(&buf, []*db.DBFinding{f}, t.TempDir(), time.Now()); err != nil {
 		t.Fatal(err)
@@ -498,7 +499,7 @@ func TestFindingsZipLongNonASCIINameStaysUTF8(t *testing.T) {
 		t.Fatal(err)
 	}
 	entry := archive.File[0]
-	if entry.NonUTF8 || !utf8.ValidString(entry.Name) || !strings.HasPrefix(entry.Name, "high_跨站脚本") || !strings.HasSuffix(entry.Name, ".md") {
+	if entry.NonUTF8 || !utf8.ValidString(entry.Name) || !strings.HasPrefix(entry.Name, "high_"+namePart) || !strings.HasSuffix(entry.Name, ".md") {
 		t.Fatalf("entry name %q (NonUTF8=%v)", entry.Name, entry.NonUTF8)
 	}
 }

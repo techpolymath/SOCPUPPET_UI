@@ -602,6 +602,17 @@ type sink struct {
 	bypass  sync.Map // flowKey of a replay flow bypassing rewrite rules -> struct{}
 }
 
+const proxyLandingMessage = "This is a proxy server; requests cannot be initiated directly."
+
+// AccessProxyServer handles browser-style requests sent to the proxy itself.
+// Supplying this response prevents go-mitmproxy from falling back to its
+// non-English default message while preserving the same 400 status.
+func (s *sink) AccessProxyServer(_ *http.Request, res http.ResponseWriter) {
+	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	res.WriteHeader(http.StatusBadRequest)
+	_, _ = io.WriteString(res, proxyLandingMessage)
+}
+
 // maybePassthrough marks a host to be tunneled transparently on the next
 // connection, but only for errors the proxy itself caused — a target that is
 // simply down/filtered would fail without us too, and must stay MITM'd+recorded.

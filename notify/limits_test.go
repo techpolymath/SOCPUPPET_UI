@@ -136,8 +136,8 @@ func TestFeishuUntruncatedItemStaysWithinBodyLimit(t *testing.T) {
 
 	huge := limitsItem()
 	huge.DetailURL = "https://socpuppet_ui.local/function/findings/detail?id=42"
-	// 36000 bytes of CJK: also checks that the cut lands on a character boundary.
-	huge.Summary = strings.Repeat("漏洞摘要", 3000)
+	// A large multibyte UTF-8 value also checks that the cut lands on a character boundary.
+	huge.Summary = strings.Repeat("vulnerability résumé — ", 3000)
 	huge.Assets = nil
 	for i := 0; i < 1500; i++ {
 		huge.Assets = append(huge.Assets, "host"+itoa(i+1)+".example.com")

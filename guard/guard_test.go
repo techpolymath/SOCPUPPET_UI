@@ -187,7 +187,7 @@ func TestDenyRuleReasonIsCapped(t *testing.T) {
 	ic.SetRulesForTest([]db.InterceptRule{
 		{ID: 1, Name: "Huge message", Enabled: true, Priority: 50,
 			MatchTarget: "tool_input", MatchType: "string", Action: "deny",
-			Pattern: "whoami", Message: strings.Repeat("日", 20000)},
+			Pattern: "whoami", Message: strings.Repeat("é", 20000)},
 	})
 	block, msg := pre(NewWithInterceptor(ic), context.Background(), "Bash", `{"command":"whoami"}`)
 	if !block {
@@ -199,7 +199,7 @@ func TestDenyRuleReasonIsCapped(t *testing.T) {
 	}
 	if !utf8.ValidString(msg) ||
 		!strings.HasPrefix(msg, "[SOCPuppet platform control, not target defense] This call was intercepted by the platform. Reason: ") ||
-		!strings.HasSuffix(msg, strings.Repeat("日", maxBlockReasonRunes)+" …(truncated). This operation is forbidden.") {
+		!strings.HasSuffix(msg, strings.Repeat("é", maxBlockReasonRunes)+" …(truncated). This operation is forbidden.") {
 		t.Errorf("capped message lost its framing or guidance: %q...%q", msg[:120], msg[len(msg)-120:])
 	}
 }
@@ -225,7 +225,7 @@ func TestTargetBlockReasonIsCapped(t *testing.T) {
 
 // A reason within the cap passes through byte for byte.
 func TestShortBlockReasonUnchanged(t *testing.T) {
-	for _, s := range []string{"", "Destructive command rejected", strings.Repeat("日", maxBlockReasonRunes)} {
+	for _, s := range []string{"", "Destructive command rejected", strings.Repeat("é", maxBlockReasonRunes)} {
 		if got := capBlockReason(s); got != s {
 			t.Errorf("capBlockReason changed a reason of %d runes", utf8.RuneCountInString(s))
 		}
